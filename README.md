@@ -72,12 +72,12 @@ func TodoHandler(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-Optionally, you can register path-specific middlewares by passing them as argument next to the handler.
+Optionally, you can register path-specific middlewares by passing them as arguments after the handler.
 
 Example:
 
 ```go
-router.Post("/todos",CreateTodoHandler, SessionMiddleware, AuthMiddleware)
+router.Post("/todos", CreateTodoHandler, SessionMiddleware, AuthMiddleware)
 ```
 
 In this example, the route has two specific middlewares: SessionMiddleware and AuthMiddleware.
@@ -86,7 +86,7 @@ You can pass any number of middlewares to every route.
 
 ## Writing Middlewares
 
-Middlewares are functions that accepts an http.Handler and returns another http.Handler.
+Middlewares are functions that accept an http.Handler and returns another http.Handler.
 
 ```go
 func Middleware(next http.Handler) http.Handler
