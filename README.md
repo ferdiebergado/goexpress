@@ -17,7 +17,7 @@ go get github.com/ferdiebergado/go-express
 1. Import the router.
 
 ```go
-import github.com/ferdiebergado/go-express
+import "github.com/ferdiebergado/go-express/router"
 ```
 
 2. Create a router.
@@ -28,13 +28,7 @@ router := router.NewRouter()
 
 3. Register global middlewares.
 
-Global middleware are registered by calling the Use() method on the router.
-
-```go
-router.Use(middleware Middleware)
-```
-
-Example:
+Global middlewares are registered by calling the Use() method on the router.
 
 ```go
 router.Use(RequestLogger)
@@ -43,22 +37,35 @@ router.Use(RequestLogger)
 go-express has some commonly-used middlewares available out of the box, just import it from the middleware package.
 
 ```go
-import github.com/ferdiebergado/go-express/middleware
+import (
+	"github.com/ferdiebergado/go-express/router" 
+	"github.com/ferdiebergado/go-express/middleware"
+)
 
-router.Use(middleware.RequestLogger)
-router.Use(middleware.StripTrailingSlashes)
-router.Use(middleware.PanicRecovery)
+func main() {
+	router := router.NewRouter()
+
+	router.Use(middleware.RequestLogger)
+	router.Use(middleware.StripTrailingSlashes)
+	router.Use(middleware.PanicRecovery)
+}
 ```
 
 4. Register routes.
 
-Similar to express, the http methods are available as methods in the router. The method accepts the path as first argument and the handler as the second argument.
+Similar to express, the http methods are available as methods in the router. The method accepts the path and the handler as arguments.
 
 ```go
-router.Get(path string, handler Handler)
+router.Get(path, handler)
 ```
 
-The Handler is an http function that accepts an http.ResponseWriter and an http.Request as arguments.
+Example:
+
+```go
+router.Get("/todos", TodoHandler)
+```
+
+The handler is an http function that accepts an http.ResponseWriter and a pointer to an http.Request as arguments.
 
 ```go
 func Handler(w http.ResponseWriter, r *http.Request)
@@ -67,8 +74,6 @@ func Handler(w http.ResponseWriter, r *http.Request)
 Example:
 
 ```go
-router.Get("/todos", TodoHandler)
-
 func TodoHandler(w http.ResponseWriter, r *http.Request) {
     w.write([]byte("Todos"))
 }
@@ -84,8 +89,22 @@ router.Post("/todos", CreateTodoHandler, SessionMiddleware, AuthMiddleware)
 
 In this example, the route has two specific middlewares: SessionMiddleware and AuthMiddleware.
 
-You can pass any number of middlewares to every route.
+You can pass any number of middlewares to a route.
 
+5. Mount the router on an http Server.
+
+```go
+	httpServer := &http.Server{
+		Addr:         ":8000",
+		Handler:      router,
+	}
+
+	fmt.Printf("HTTP Server listening on %s...\n",  httpServer.Addr)
+
+	if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatal("error listening and serving!")
+	}
+```
 ## Writing Middlewares
 
 Middlewares are functions that accept an http.Handler and returns another http.Handler.
