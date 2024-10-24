@@ -1,16 +1,14 @@
-package router_test
+package router
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	router "github.com/ferdiebergado/go-express"
 )
 
 // TestNewRouter ensures that a new Router is created successfully.
 func TestNewRouter(t *testing.T) {
-	r := router.NewRouter()
+	r := NewRouter()
 	if r == nil {
 		t.Fatal("Expected non-nil router")
 	}
@@ -18,7 +16,7 @@ func TestNewRouter(t *testing.T) {
 
 // TestRouterHandle tests route registration and response.
 func TestRouterHandle(t *testing.T) {
-	r := router.NewRouter()
+	r := NewRouter()
 	r.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello, world!"))
 	})
@@ -41,7 +39,7 @@ func TestRouterHandle(t *testing.T) {
 
 // TestRouterPost ensures that POST routes are handled correctly.
 func TestRouterPost(t *testing.T) {
-	r := router.NewRouter()
+	r := NewRouter()
 	r.Post("/submit", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Post submitted!"))
 	})
@@ -64,7 +62,7 @@ func TestRouterPost(t *testing.T) {
 
 // TestRouterPost ensures that POST routes are handled correctly.
 func TestRouterPatch(t *testing.T) {
-	r := router.NewRouter()
+	r := NewRouter()
 	r.Patch("/patch_update", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Post updated!"))
 	})
@@ -86,7 +84,7 @@ func TestRouterPatch(t *testing.T) {
 }
 
 func TestRouterPut(t *testing.T) {
-	r := router.NewRouter()
+	r := NewRouter()
 	r.Put("/put_update", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Post updated!"))
 	})
@@ -109,7 +107,7 @@ func TestRouterPut(t *testing.T) {
 
 // TestRouterNotFound ensures that the router returns error 404 for unassigned routes.
 func TestRouterNotFoundHandling(t *testing.T) {
-	r := router.NewRouter()
+	r := NewRouter()
 
 	req := httptest.NewRequest("GET", "/notfound", nil)
 	w := httptest.NewRecorder()
@@ -124,7 +122,7 @@ func TestRouterNotFoundHandling(t *testing.T) {
 
 // TestGlobalMiddleware ensures that global middleware is applied to all routes.
 func TestGlobalMiddleware(t *testing.T) {
-	r := router.NewRouter()
+	r := NewRouter()
 
 	// Add a global middleware that appends "Processed: " to the response.
 	r.Use(func(next http.Handler) http.Handler {
@@ -152,7 +150,7 @@ func TestGlobalMiddleware(t *testing.T) {
 
 // TestRouteSpecificMiddleware ensures route-specific middleware is applied correctly.
 func TestRouteSpecificMiddleware(t *testing.T) {
-	r := router.NewRouter()
+	r := NewRouter()
 
 	// Add route-specific middleware that appends "Specific: " to the response.
 	r.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
@@ -178,7 +176,7 @@ func TestRouteSpecificMiddleware(t *testing.T) {
 
 // TestMethodNotAllowed ensures that the router returns a 405 status for unsupported methods.
 func TestMethodNotAllowed(t *testing.T) {
-	r := router.NewRouter()
+	r := NewRouter()
 	r.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello"))
 	})
@@ -196,7 +194,7 @@ func TestMethodNotAllowed(t *testing.T) {
 
 // TestRouterHandleMethod tests that a specific HTTP method and path are handled correctly.
 func TestRouterHandleMethod(t *testing.T) {
-	r := router.NewRouter()
+	r := NewRouter()
 
 	r.HandleMethod("PUT", "/update", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Update successful"))
@@ -220,7 +218,7 @@ func TestRouterHandleMethod(t *testing.T) {
 
 // TestDeleteMethod ensures that DELETE routes are handled correctly.
 func TestDeleteMethod(t *testing.T) {
-	r := router.NewRouter()
+	r := NewRouter()
 	r.Delete("/remove", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Delete successful"))
 	})
