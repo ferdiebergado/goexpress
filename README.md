@@ -1,4 +1,5 @@
 # go-express
+
 Simple, dependency-free, and Express-styled HTTP Router written in Go.
 
 ## Requirements
@@ -12,6 +13,7 @@ go get github.com/ferdiebergado/go-express
 ```
 
 ## Usage
+
 1. Import the router.
 
 ```go
@@ -99,11 +101,12 @@ func RequestLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		next.ServeHTTP(w, r)
-        duration := time.Since(start)
+		duration := time.Since(start)
 		log.Printf("%s %s %s %d", r.Method, r.URL.Path, r.Proto, duration)
 	})
 }
 ```
 
 ## License
+
 go-express is open-sourced software licensed under [MIT License](https://github.com/ferdiebergado/go-express/blob/main/LICENSE).
