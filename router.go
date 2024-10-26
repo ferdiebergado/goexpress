@@ -115,3 +115,9 @@ func (r *Router) HandleNotFound() {
 		http.NotFound(w, r)
 	})
 }
+
+func (r *Router) ServeStatic(path string) {
+	fullPath := fmt.Sprintf("/%s/", path)
+	pattern := fmt.Sprintf("GET %s", fullPath)
+	r.Handle(pattern, http.StripPrefix(fullPath, http.FileServer(http.Dir(path))))
+}

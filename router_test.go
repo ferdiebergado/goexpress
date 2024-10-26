@@ -264,9 +264,9 @@ func TestDeleteMethod(t *testing.T) {
 }
 
 func TestStaticPathHandling(t *testing.T) {
-	const staticPath = "/public/"
+	const staticPath = "public"
 	r := NewRouter()
-	r.Handle("GET "+staticPath, http.StripPrefix(staticPath, http.FileServer(http.Dir("public"))))
+	r.ServeStatic(staticPath)
 
 	req := httptest.NewRequest("GET", "/public/home.html", nil)
 	w := httptest.NewRecorder()
