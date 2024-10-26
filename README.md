@@ -90,13 +90,11 @@ func TodoHandler(w http.ResponseWriter, r *http.Request) {
 
 Optionally, you can register path-specific middlewares by passing them as arguments after the handler.
 
-Example:
-
 ```go
 router.Post("/todos", CreateTodoHandler, SessionMiddleware, AuthMiddleware)
 ```
 
-In this example, the route has two specific middlewares: SessionMiddleware and AuthMiddleware.
+In here, the route has two specific middlewares: SessionMiddleware and AuthMiddleware.
 
 You can pass any number of middlewares to a route.
 
@@ -108,7 +106,7 @@ http.ListenAndServe(":8080", router)
 
 ## Serving Static Files
 
-go-express makes it easy to serve static files from a specified directory. Simply provide the path of the static files to be served to the ServeStatic method of the router.
+go-express makes it easy to serve static files from a specified directory. Simply provide the name of the directory containing the static files to be served to the ServeStatic method of the router.
 
 ```go
 router.ServeStatic("assets")
