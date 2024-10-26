@@ -2,6 +2,15 @@
 
 Simple, dependency-free, and Express-styled HTTP Router written in Go.
 
+## Features
+
+- Simple and easy to use
+- Expressjs-style routing
+- Relies only on the Go standard library
+- Uses net/http ServeMux under the hood
+- Static files handling
+- Common middlewares available out of the box
+
 ## Requirements
 
 - Go 1.22 or higher
@@ -65,7 +74,7 @@ Example:
 router.Get("/todos", TodoHandler)
 ```
 
-The handler is an http function that accepts an http.ResponseWriter and a pointer to an http.Request as arguments.
+The handler is a function that accepts an http.ResponseWriter and a pointer to an http.Request as arguments.
 
 ```go
 func Handler(w http.ResponseWriter, r *http.Request)
@@ -103,6 +112,17 @@ go-express makes it easy to serve static files from a specified directory. Simpl
 
 ```go
 router.ServeStatic("assets")
+```
+
+This will serve files from the "assets" directory at "/assets/". Now, any request the starts with /assets/ will serve files from this directory, e.g. /assets/styles.css.
+
+You can then add this to the head tag of your html:
+
+```html
+<head>
+  <link rel="stylesheet" src="/assets/styles.css">
+  <script src="/assets/js/app.js" defer>
+</head>
 ```
 
 ## Writing Middlewares
