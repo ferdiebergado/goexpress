@@ -220,7 +220,7 @@ func TestMethodNotAllowed(t *testing.T) {
 func TestRouterHandleMethod(t *testing.T) {
 	r := NewRouter()
 
-	r.HandleMethod("PUT", "/update", func(w http.ResponseWriter, r *http.Request) {
+	r.handleMethod("PUT", "/update", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Update successful"))
 	})
 

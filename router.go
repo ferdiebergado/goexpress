@@ -21,14 +21,10 @@ type Middleware func(http.Handler) http.Handler
 // and an empty slice for middlewares. This Router can be used to register routes
 // and apply middleware to HTTP requests.
 func NewRouter() *Router {
-	r := &Router{
+	return &Router{
 		mux:         http.NewServeMux(),
-		middlewares: []Middleware{},
+		middlewares: make([]Middleware, 0),
 	}
-
-	r.HandleNotFound()
-
-	return r
 }
 
 // Use adds a middleware to the router's global middleware chain.
@@ -64,10 +60,10 @@ func (r *Router) Handle(pattern string, handler http.Handler, middlewares ...Mid
 	r.mux.Handle(pattern, finalHandler)
 }
 
-// HandleMethod registers a route with a specified HTTP method, path, and handler function.
+// handleMethod registers a route with a specified HTTP method, path, and handler function.
 // It also allows optional middlewares to be applied to this route.
 // The method and path are combined into a pattern, which is used to route the request.
-func (r *Router) HandleMethod(method string, path string, handler http.HandlerFunc, middlewares ...Middleware) {
+func (r *Router) handleMethod(method string, path string, handler http.HandlerFunc, middlewares ...Middleware) {
 	pattern := fmt.Sprintf("%s %s", method, path)
 	r.Handle(pattern, handler, middlewares...)
 }
@@ -75,31 +71,31 @@ func (r *Router) HandleMethod(method string, path string, handler http.HandlerFu
 // Get registers a new route that responds to HTTP GET requests for the specified path.
 // It applies the provided handler and any optional middlewares to the route.
 func (r *Router) Get(path string, handler http.HandlerFunc, middlewares ...Middleware) {
-	r.HandleMethod("GET", path, handler, middlewares...)
+	r.handleMethod("GET", path, handler, middlewares...)
 }
 
 // Post registers a new route that responds to HTTP POST requests for the specified path.
 // It applies the provided handler and any optional middlewares to the route.
 func (r *Router) Post(path string, handler http.HandlerFunc, middlewares ...Middleware) {
-	r.HandleMethod("POST", path, handler, middlewares...)
+	r.handleMethod("POST", path, handler, middlewares...)
 }
 
 // Patch registers a new route that responds to HTTP PATCH requests for the specified path.
 // It applies the provided handler and any optional middlewares to the route.
 func (r *Router) Patch(path string, handler http.HandlerFunc, middlewares ...Middleware) {
-	r.HandleMethod("PATCH", path, handler, middlewares...)
+	r.handleMethod("PATCH", path, handler, middlewares...)
 }
 
 // Put registers a new route that responds to HTTP PUT requests for the specified path.
 // It applies the provided handler and any optional middlewares to the route.
 func (r *Router) Put(path string, handler http.HandlerFunc, middlewares ...Middleware) {
-	r.HandleMethod("PUT", path, handler, middlewares...)
+	r.handleMethod("PUT", path, handler, middlewares...)
 }
 
 // Delete registers a new route that responds to HTTP DELETE requests for the specified path.
 // It applies the provided handler and any optional middlewares to the route.
 func (r *Router) Delete(path string, handler http.HandlerFunc, middlewares ...Middleware) {
-	r.HandleMethod("DELETE", path, handler, middlewares...)
+	r.handleMethod("DELETE", path, handler, middlewares...)
 }
 
 // ServeHTTP allows the Router to satisfy the http.Handler interface.
@@ -107,13 +103,6 @@ func (r *Router) Delete(path string, handler http.HandlerFunc, middlewares ...Mi
 // after all middlewares have been applied to the registered handlers.
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r.mux.ServeHTTP(w, req)
-}
-
-// Not found handler
-func (r *Router) HandleNotFound() {
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		http.NotFound(w, r)
-	})
 }
 
 func (r *Router) ServeStatic(path string) {
