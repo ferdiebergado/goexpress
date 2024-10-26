@@ -1,0 +1,38 @@
+# EditorConfig is awesome: https://EditorConfig.org
+
+# Top-most EditorConfig file
+root = true
+
+# Set default settings for all files
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# Go-specific settings
+[{Makefile,go.mod,go.sum,*.go,.gitmodules}]
+indent_style = tab
+indent_size = 4
+
+# JSON, YAML, and other common config files
+[*.{json,yml,yaml}]
+indent_style = space
+indent_size = 2
+
+# Markdown and related files
+[*.md]
+trim_trailing_whitespace = false
+insert_final_newline = true
+
+eclint_indent_style = unset
+
+# HTML files (common in Go web projects)
+[*.html]
+indent_style = space
+indent_size = 2
+
+[Dockerfile]
+indent_size = 4
