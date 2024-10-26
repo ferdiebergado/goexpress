@@ -54,7 +54,7 @@ func (r *Router) wrap(handler http.Handler, middlewares []Middleware) http.Handl
 // It allows optional route-specific middleware to be applied, which will be executed
 // before the router's global middleware. The final handler is wrapped in both the
 // route-specific and global middleware chains.
-func (r *Router) Handle(pattern string, handler http.HandlerFunc, middlewares ...Middleware) {
+func (r *Router) Handle(pattern string, handler http.Handler, middlewares ...Middleware) {
 	// Wrap the handler with route-specific middlewares first.
 	finalHandler := r.wrap(handler, middlewares)
 
