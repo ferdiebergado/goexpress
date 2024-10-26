@@ -3,6 +3,7 @@ package router
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -34,6 +35,29 @@ func TestRouterHandle(t *testing.T) {
 	body := w.Body.String()
 	if body != "Hello, world!" {
 		t.Errorf("expected body to be 'Hello, world!'; got %s", body)
+	}
+}
+
+// TestRouterPost ensures that POST routes are handled correctly.
+func TestRouterGet(t *testing.T) {
+	r := NewRouter()
+	r.Get("/todos", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Todo list."))
+	})
+
+	req := httptest.NewRequest("GET", "/todos", nil)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %d", resp.StatusCode)
+	}
+
+	body := w.Body.String()
+	if body != "Todo list." {
+		t.Errorf("expected body to be 'Post submitted!'; got %s", body)
 	}
 }
 
@@ -236,5 +260,27 @@ func TestDeleteMethod(t *testing.T) {
 	body := w.Body.String()
 	if body != "Delete successful" {
 		t.Errorf("expected body to be 'Delete successful'; got %s", body)
+	}
+}
+
+func TestStaticPathHandling(t *testing.T) {
+	const staticPath = "/public/"
+	r := NewRouter()
+	r.Handle("GET "+staticPath, http.StripPrefix(staticPath, http.FileServer(http.Dir("public"))))
+
+	req := httptest.NewRequest("GET", "/public/home.html", nil)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %d", resp.StatusCode)
+	}
+
+	contentType := resp.Header.Get("content-type")
+
+	if strings.Split(contentType, ";")[0] != "text/html" {
+		t.Errorf("expected content-type text/html; got %s", resp.Header.Get("content-type"))
 	}
 }
