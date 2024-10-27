@@ -263,6 +263,102 @@ func TestDeleteMethod(t *testing.T) {
 	}
 }
 
+// TestConnect tests the Connect method of the Router.
+func TestConnect(t *testing.T) {
+	r := NewRouter()
+	r.Connect("/connect", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Connect response"))
+	})
+
+	req := httptest.NewRequest("CONNECT", "/connect", nil)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %d", resp.StatusCode)
+	}
+
+	body := w.Body.String()
+	if body != "Connect response" {
+		t.Errorf("expected body to be 'Connect response'; got %s", body)
+	}
+}
+
+// TestOptions tests the Options method of the Router.
+func TestOptions(t *testing.T) {
+	r := NewRouter()
+	r.Options("/options", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	req := httptest.NewRequest("OPTIONS", "/options", nil)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusNoContent {
+		t.Errorf("expected status No Content; got %d", resp.StatusCode)
+	}
+}
+
+// TestTrace tests the Trace method of the Router.
+func TestTrace(t *testing.T) {
+	r := NewRouter()
+	r.Trace("/trace", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Trace response"))
+	})
+
+	req := httptest.NewRequest("TRACE", "/trace", nil)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %d", resp.StatusCode)
+	}
+
+	body := w.Body.String()
+	if body != "Trace response" {
+		t.Errorf("expected body to be 'Trace response'; got %s", body)
+	}
+}
+
+// TestHead tests the Head method of the Router.
+func TestHead(t *testing.T) {
+	r := NewRouter()
+	r.Head("/head", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Custom-Header", "CustomValue")
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest("HEAD", "/head", nil)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %d", resp.StatusCode)
+	}
+
+	// Check that the custom header is present
+	if headerValue := resp.Header.Get("X-Custom-Header"); headerValue != "CustomValue" {
+		t.Errorf("expected header X-Custom-Header to be 'CustomValue'; got %s", headerValue)
+	}
+
+	// Ensure the body is empty for HEAD requests
+	body := w.Body.String()
+	if body != "" {
+		t.Errorf("expected body to be empty for HEAD request; got %s", body)
+	}
+}
+
 // TestStaticPathHandling verifies that a request to a static file within a specified directory is correctly handled
 func TestStaticPathHandling(t *testing.T) {
 	const staticPath = "public"

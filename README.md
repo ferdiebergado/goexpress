@@ -201,6 +201,7 @@ func main() {
 	router.Put("/api/todos/{id}", UpdateTodo, AuthMiddleware)
 	router.Delete("/api/todos/{id}", DeleteTodo, AuthMiddleware)
 
+  // Start an http server with the router.
 	http.ListenAndServe(":8080", router)
 }
 
