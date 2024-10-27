@@ -228,5 +228,5 @@ func (r *Router) ServeStatic(path string) {
 // This will display "Custom 404 - Page Not Found" when a request is made to
 // an undefined route.
 func (r *Router) NotFound(handler http.HandlerFunc) {
-	r.Handle("/", handler, r.middlewares...)
+	r.Handle("/", handler)
 }
