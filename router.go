@@ -210,3 +210,23 @@ func (r *Router) ServeStatic(path string) {
 	pattern := fmt.Sprintf("GET %s", fullPath)
 	r.Handle(pattern, http.StripPrefix(fullPath, http.FileServer(http.Dir(path))))
 }
+
+// NotFound sets a custom handler for requests that don't match any registered route.
+// When a request is made to an undefined route, this handler will be invoked,
+// allowing a custom "Not Found" page or response to be returned.
+//
+// Parameters:
+//   - handler: The http.HandlerFunc to handle "Not Found" responses.
+//
+// Example usage:
+//
+//	router := NewRouter()
+//	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
+//	    http.Error(w, "Custom 404 - Page Not Found", http.StatusNotFound)
+//	})
+//
+// This will display "Custom 404 - Page Not Found" when a request is made to
+// an undefined route.
+func (r *Router) NotFound(handler http.HandlerFunc) {
+	r.Handle("/", handler, r.middlewares...)
+}

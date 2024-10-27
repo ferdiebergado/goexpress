@@ -263,6 +263,7 @@ func TestDeleteMethod(t *testing.T) {
 	}
 }
 
+// TestStaticPathHandling verifies that a request to a static file within a specified directory is correctly handled
 func TestStaticPathHandling(t *testing.T) {
 	const staticPath = "public"
 	r := NewRouter()
@@ -282,5 +283,37 @@ func TestStaticPathHandling(t *testing.T) {
 
 	if strings.Split(contentType, ";")[0] != "text/html" {
 		t.Errorf("expected content-type text/html; got %s", resp.Header.Get("content-type"))
+	}
+}
+
+// TestNotFound verifies that the custom "Not Found" handler is called for undefined routes.
+func TestNotFound(t *testing.T) {
+	// Initialize the router.
+	router := NewRouter()
+
+	// Define the custom "Not Found" handler.
+	notFoundHandler := func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "Custom 404 - Page Not Found", http.StatusNotFound)
+	}
+
+	// Set the custom "Not Found" handler in the router.
+	router.NotFound(notFoundHandler)
+
+	// Create a request to an undefined route.
+	req := httptest.NewRequest("GET", "/undefined", nil)
+	rec := httptest.NewRecorder()
+
+	// Serve the request using the router.
+	router.ServeHTTP(rec, req)
+
+	// Check the response status code.
+	if status := rec.Code; status != http.StatusNotFound {
+		t.Errorf("expected status %d, got %d", http.StatusNotFound, status)
+	}
+
+	// Check the response body.
+	expectedBody := "Custom 404 - Page Not Found\n"
+	if body := rec.Body.String(); body != expectedBody {
+		t.Errorf("expected body %q, got %q", expectedBody, body)
 	}
 }

@@ -123,6 +123,32 @@ You can then add this to the head tag of your html:
 </head>
 ```
 
+## Custom 404 Error Handler
+
+By default, go-express returns a 404 status code and plain status text when an unregistered route is requested. To customize this behavior, pass an http handler function to the NotFound method of the router.
+
+Example:
+
+```go
+router.NotFound(func(w http.ResponseWriter, r *http.Request){
+	templates := template.Must(template.ParseGlob("templates/*.html"))
+
+	var buf bytes.Buffer
+
+	if err := templates.ExecuteTemplate(&buf, "404.html", nil); err != nil {
+    log.Prinf("execute template: %w", err)
+		return
+	}
+
+	_, err = buf.WriteTo(w)
+
+	if err != nil {
+    log.Printf("write to buffer: %w", err)
+		return
+	}
+})
+```
+
 ## Writing Middlewares
 
 Middlewares are functions that accept an http.Handler and returns another http.Handler.
