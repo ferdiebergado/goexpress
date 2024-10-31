@@ -1,9 +1,6 @@
 package router
 
-import (
-	"fmt"
-	"net/http"
-)
+import "net/http"
 
 // Router is a custom HTTP router built on top of http.ServeMux with support for global
 // and route-specific middleware. It allows easy route registration for common HTTP methods
@@ -99,7 +96,7 @@ func (r *Router) Handle(pattern string, handler http.Handler, middlewares ...Mid
 //
 //	router.handleMethod("GET", "/info", infoHandler)
 func (r *Router) handleMethod(method, path string, handler http.HandlerFunc, middlewares ...Middleware) {
-	pattern := fmt.Sprintf("%s %s", method, path)
+	pattern := method + " " + path
 	r.Handle(pattern, handler, middlewares...)
 }
 
@@ -279,8 +276,8 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // This function constructs a GET route pattern using the specified path
 // and registers it to the router, enabling clients to access static resources.
 func (r *Router) ServeStatic(path string) {
-	fullPath := fmt.Sprintf("/%s/", path)
-	pattern := fmt.Sprintf("GET %s", fullPath)
+	fullPath := "/" + path + "/"
+	pattern := http.MethodGet + " " + fullPath
 	r.Handle(pattern, http.StripPrefix(fullPath, http.FileServer(http.Dir(path))))
 }
 
