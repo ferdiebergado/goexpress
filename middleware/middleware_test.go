@@ -59,3 +59,31 @@ func TestPanicRecovery(t *testing.T) {
 		t.Errorf("expected status %d, got %d", http.StatusInternalServerError, rec.Code)
 	}
 }
+
+// TestStatusWriterWithHTTPError tests the behavior of statusWriter when an HTTP handler calls http.Error.
+func TestStatusWriterWithHTTPError(t *testing.T) {
+	// Create a response recorder to capture the response
+	recorder := httptest.NewRecorder()
+
+	// Define a test handler that calls http.Error
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "Not Found", http.StatusNotFound)
+	})
+
+	// Wrap the handler with the RequestLogger middleware
+	loggedHandler := middleware.RequestLogger(handler)
+
+	// Serve the HTTP request using the logged handler
+	loggedHandler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/", nil))
+
+	// Verify that the recorder has the correct status code
+	if recorder.Code != http.StatusNotFound {
+		t.Errorf("expected recorder status code %d, got %d", http.StatusNotFound, recorder.Code)
+	}
+
+	// Verify that the response body contains the expected error message
+	expectedBody := "Not Found\n" // http.Error appends a newline to the error message
+	if recorder.Body.String() != expectedBody {
+		t.Errorf("expected body %q, got %q", expectedBody, recorder.Body.String())
+	}
+}

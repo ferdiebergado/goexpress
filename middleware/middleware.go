@@ -13,14 +13,18 @@ import (
 // inspect the status code after a request is handled.
 type statusWriter struct {
 	http.ResponseWriter
-	status int
+	status     int
+	headerSent bool
 }
 
 // WriteHeader sets the HTTP status code for the response and records it in the statusWriter.
 // This allows middleware to track which status code was sent to the client.
 func (w *statusWriter) WriteHeader(statusCode int) {
-	w.status = statusCode
-	w.ResponseWriter.WriteHeader(statusCode)
+	if !w.headerSent { // check if header has already been sent
+		w.status = statusCode
+		w.headerSent = true // mark the header as sent
+		w.ResponseWriter.WriteHeader(statusCode)
+	}
 }
 
 // RequestLogger logs each incoming HTTP request including the method, URL, protocol,
