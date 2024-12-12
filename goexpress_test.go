@@ -9,7 +9,7 @@ import (
 
 // TestNewRouter ensures that a new Router is created successfully.
 func TestNewRouter(t *testing.T) {
-	r := NewRouter()
+	r := New()
 	if r == nil {
 		t.Fatal("Expected non-nil router")
 	}
@@ -17,8 +17,8 @@ func TestNewRouter(t *testing.T) {
 
 // TestRouterHandle tests route registration and response.
 func TestRouterHandle(t *testing.T) {
-	r := NewRouter()
-	r.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
+	r := New()
+	r.Get("/hello", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Hello, world!"))
 
 		if err != nil {
@@ -44,8 +44,8 @@ func TestRouterHandle(t *testing.T) {
 
 // TestRouterPost ensures that POST routes are handled correctly.
 func TestRouterGet(t *testing.T) {
-	r := NewRouter()
-	r.Get("/todos", func(w http.ResponseWriter, r *http.Request) {
+	r := New()
+	r.Get("/todos", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Todo list."))
 		if err != nil {
 			t.Errorf("write byte: %v", err)
@@ -70,8 +70,8 @@ func TestRouterGet(t *testing.T) {
 
 // TestRouterPost ensures that POST routes are handled correctly.
 func TestRouterPost(t *testing.T) {
-	r := NewRouter()
-	r.Post("/submit", func(w http.ResponseWriter, r *http.Request) {
+	r := New()
+	r.Post("/submit", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Post submitted!"))
 		if err != nil {
 			t.Errorf("write byte: %v", err)
@@ -96,8 +96,8 @@ func TestRouterPost(t *testing.T) {
 
 // TestRouterPost ensures that POST routes are handled correctly.
 func TestRouterPatch(t *testing.T) {
-	r := NewRouter()
-	r.Patch("/patch_update", func(w http.ResponseWriter, r *http.Request) {
+	r := New()
+	r.Patch("/patch_update", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Post updated!"))
 		if err != nil {
 			t.Errorf("write byte: %v", err)
@@ -121,8 +121,8 @@ func TestRouterPatch(t *testing.T) {
 }
 
 func TestRouterPut(t *testing.T) {
-	r := NewRouter()
-	r.Put("/put_update", func(w http.ResponseWriter, r *http.Request) {
+	r := New()
+	r.Put("/put_update", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Post updated!"))
 		if err != nil {
 			t.Errorf("write byte: %v", err)
@@ -147,7 +147,7 @@ func TestRouterPut(t *testing.T) {
 
 // TestRouterNotFound ensures that the router returns error 404 for unassigned routes.
 func TestRouterNotFoundHandling(t *testing.T) {
-	r := NewRouter()
+	r := New()
 
 	req := httptest.NewRequest("GET", "/notfound", nil)
 	w := httptest.NewRecorder()
@@ -162,7 +162,7 @@ func TestRouterNotFoundHandling(t *testing.T) {
 
 // TestGlobalMiddleware ensures that global middleware is applied to all routes.
 func TestGlobalMiddleware(t *testing.T) {
-	r := NewRouter()
+	r := New()
 
 	// Add a global middleware that appends "Processed: " to the response.
 	r.Use(func(next http.Handler) http.Handler {
@@ -175,7 +175,7 @@ func TestGlobalMiddleware(t *testing.T) {
 		})
 	})
 
-	r.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/hello", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Hello"))
 		if err != nil {
 			t.Errorf("write byte: %v", err)
@@ -196,10 +196,10 @@ func TestGlobalMiddleware(t *testing.T) {
 
 // TestRouteSpecificMiddleware ensures route-specific middleware is applied correctly.
 func TestRouteSpecificMiddleware(t *testing.T) {
-	r := NewRouter()
+	r := New()
 
 	// Add route-specific middleware that appends "Specific: " to the response.
-	r.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/hello", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Hello"))
 		if err != nil {
 			t.Errorf("write byte: %v", err)
@@ -228,8 +228,8 @@ func TestRouteSpecificMiddleware(t *testing.T) {
 
 // TestMethodNotAllowed ensures that the router returns a 405 status for unsupported methods.
 func TestMethodNotAllowed(t *testing.T) {
-	r := NewRouter()
-	r.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
+	r := New()
+	r.Get("/hello", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Hello"))
 		if err != nil {
 			t.Errorf("write byte: %v", err)
@@ -249,9 +249,9 @@ func TestMethodNotAllowed(t *testing.T) {
 
 // TestRouterHandleMethod tests that a specific HTTP method and path are handled correctly.
 func TestRouterHandleMethod(t *testing.T) {
-	r := NewRouter()
+	r := New()
 
-	r.handleMethod("PUT", "/update", func(w http.ResponseWriter, r *http.Request) {
+	r.handleMethod("PUT", "/update", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Update successful"))
 		if err != nil {
 			t.Errorf("write byte: %v", err)
@@ -276,8 +276,8 @@ func TestRouterHandleMethod(t *testing.T) {
 
 // TestDeleteMethod ensures that DELETE routes are handled correctly.
 func TestDeleteMethod(t *testing.T) {
-	r := NewRouter()
-	r.Delete("/remove", func(w http.ResponseWriter, r *http.Request) {
+	r := New()
+	r.Delete("/remove", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Delete successful"))
 		if err != nil {
 			t.Errorf("write byte: %v", err)
@@ -302,8 +302,8 @@ func TestDeleteMethod(t *testing.T) {
 
 // TestConnect tests the Connect method of the Router.
 func TestConnect(t *testing.T) {
-	r := NewRouter()
-	r.Connect("/connect", func(w http.ResponseWriter, r *http.Request) {
+	r := New()
+	r.Connect("/connect", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("Connect response"))
 		if err != nil {
@@ -329,8 +329,8 @@ func TestConnect(t *testing.T) {
 
 // TestOptions tests the Options method of the Router.
 func TestOptions(t *testing.T) {
-	r := NewRouter()
-	r.Options("/options", func(w http.ResponseWriter, r *http.Request) {
+	r := New()
+	r.Options("/options", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 
@@ -347,8 +347,8 @@ func TestOptions(t *testing.T) {
 
 // TestTrace tests the Trace method of the Router.
 func TestTrace(t *testing.T) {
-	r := NewRouter()
-	r.Trace("/trace", func(w http.ResponseWriter, r *http.Request) {
+	r := New()
+	r.Trace("/trace", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("Trace response"))
 		if err != nil {
@@ -374,8 +374,8 @@ func TestTrace(t *testing.T) {
 
 // TestHead tests the Head method of the Router.
 func TestHead(t *testing.T) {
-	r := NewRouter()
-	r.Head("/head", func(w http.ResponseWriter, r *http.Request) {
+	r := New()
+	r.Head("/head", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("X-Custom-Header", "CustomValue")
 		w.WriteHeader(http.StatusOK)
 	})
@@ -405,7 +405,7 @@ func TestHead(t *testing.T) {
 // TestStaticPathHandling verifies that a request to a static file within a specified directory is correctly handled
 func TestStaticPathHandling(t *testing.T) {
 	const staticPath = "public"
-	r := NewRouter()
+	r := New()
 	r.ServeStatic(staticPath)
 
 	req := httptest.NewRequest("GET", "/public/home.html", nil)
@@ -428,10 +428,10 @@ func TestStaticPathHandling(t *testing.T) {
 // TestNotFound verifies that the custom "Not Found" handler is called for undefined routes.
 func TestNotFound(t *testing.T) {
 	// Initialize the router.
-	router := NewRouter()
+	router := New()
 
 	// Define the custom "Not Found" handler.
-	notFoundHandler := func(w http.ResponseWriter, r *http.Request) {
+	notFoundHandler := func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "Custom 404 - Page Not Found", http.StatusNotFound)
 	}
 
@@ -458,17 +458,17 @@ func TestNotFound(t *testing.T) {
 }
 
 func TestGroup(t *testing.T) {
-	r := NewRouter()
+	r := New()
 
 	r.Group("/api/v1", func(router *Router) *Router {
-		router.Get("/user", func(w http.ResponseWriter, r *http.Request) {
+		router.Get("/user", func(w http.ResponseWriter, _ *http.Request) {
 			_, err := w.Write([]byte("route group works"))
 			if err != nil {
 				t.Errorf("write byte: %v", err)
 			}
 		})
 
-		router.Post("/user", func(w http.ResponseWriter, r *http.Request) {
+		router.Post("/user", func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusCreated)
 			_, err := w.Write([]byte("user route group post works"))
 			if err != nil {
@@ -476,7 +476,7 @@ func TestGroup(t *testing.T) {
 			}
 		})
 
-		router.Get("/jobs", func(w http.ResponseWriter, r *http.Request) {
+		router.Get("/jobs", func(w http.ResponseWriter, _ *http.Request) {
 			_, err := w.Write([]byte("jobs route group works"))
 			if err != nil {
 				t.Errorf("write byte: %v", err)
@@ -484,7 +484,7 @@ func TestGroup(t *testing.T) {
 		})
 
 		router.Group("/admin", func(r *Router) *Router {
-			r.Get("/users", func(w http.ResponseWriter, r *http.Request) {
+			r.Get("/users", func(w http.ResponseWriter, _ *http.Request) {
 				_, err := w.Write([]byte("nested route group works"))
 				if err != nil {
 					t.Errorf("write byte: %v", err)

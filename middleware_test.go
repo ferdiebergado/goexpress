@@ -1,11 +1,9 @@
-package middleware_test
+package goexpress
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/ferdiebergado/go-express/middleware"
 )
 
 func TestRequestLogger(t *testing.T) {
@@ -18,7 +16,7 @@ func TestRequestLogger(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	// Wrap the handler with the RequestLogger middleware
-	middleware.LogRequest(handler).ServeHTTP(rec, req)
+	LogRequest(handler).ServeHTTP(rec, req)
 
 	// Check if the status code is still OK
 	if rec.Code != http.StatusOK {
@@ -35,7 +33,7 @@ func TestStripTrailingSlashes(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	// Wrap the handler with the StripTrailingSlashes middleware
-	middleware.StripTrailingSlashes(handler).ServeHTTP(rec, req)
+	StripTrailingSlashes(handler).ServeHTTP(rec, req)
 
 	// Check if it redirects without the trailing slash
 	if rec.Code != http.StatusMovedPermanently {
@@ -52,7 +50,7 @@ func TestPanicRecovery(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	// Wrap the handler with the PanicRecovery middleware
-	middleware.RecoverFromPanic(handler).ServeHTTP(rec, req)
+	RecoverFromPanic(handler).ServeHTTP(rec, req)
 
 	// Check if it returns a 500 status code
 	if rec.Code != http.StatusInternalServerError {
@@ -71,7 +69,7 @@ func TestStatusWriterWithHTTPError(t *testing.T) {
 	})
 
 	// Wrap the handler with the RequestLogger middleware
-	loggedHandler := middleware.LogRequest(handler)
+	loggedHandler := LogRequest(handler)
 
 	// Serve the HTTP request using the logged handler
 	loggedHandler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/", nil))

@@ -26,13 +26,13 @@ go get github.com/ferdiebergado/go-express
 1. Import the router.
 
 ```go
-import router "github.com/ferdiebergado/go-express"
+import "github.com/ferdiebergado/go-express"
 ```
 
 2. Create a router.
 
 ```go
-router := router.NewRouter()
+router := router.New()
 ```
 
 3. Register global middlewares.
@@ -40,23 +40,22 @@ router := router.NewRouter()
 Global middlewares are registered by calling the Use() method on the router.
 
 ```go
-router.Use(RequestLogger)
+router.Use(goexpress.RequestLogger)
 ```
 
 go-express has some commonly-used middlewares available out of the box, just import it from the middleware package.
 
 ```go
 import (
-	"github.com/ferdiebergado/go-express/router"
-	"github.com/ferdiebergado/go-express/middleware"
+	"github.com/ferdiebergado/go-express"
 )
 
 func main() {
-	router := router.NewRouter()
+	router := goexpress.New()
 
-	router.Use(middleware.RequestLogger)
-	router.Use(middleware.StripTrailingSlashes)
-	router.Use(middleware.PanicRecovery)
+	router.Use(goexpress.RequestLogger)
+	router.Use(goexpress.StripTrailingSlashes)
+	router.Use(goexpress.PanicRecovery)
 }
 ```
 
@@ -198,19 +197,18 @@ package main
 import (
 	"net/http"
 
-	router "github.com/ferdiebergado/go-express"
-	"github.com/ferdiebergado/go-express/middleware"
+	"github.com/ferdiebergado/go-express"
 )
 
 func main() {
 
 	// Create the router.
-	router := router.NewRouter()
+	router := router.New()
 
 	// Register global middlewares.
-	router.Use(middleware.RequestLogger)
-	router.Use(middleware.StripTrailingSlashes)
-	router.Use(middleware.PanicRecovery)
+	router.Use(goexpress.RequestLogger)
+	router.Use(goexpress.StripTrailingSlashes)
+	router.Use(goexpress.PanicRecovery)
 
 	// Serve static files.
 	router.ServeStatic("assets")

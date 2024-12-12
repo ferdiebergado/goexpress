@@ -1,4 +1,4 @@
-package middleware
+package goexpress
 
 import (
 	"log"
@@ -62,9 +62,10 @@ func RecoverFromPanic(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				log.Printf("Internal error: %v", err)
+				log.Printf("Recover: %v", err)
 				log.Println(string(debug.Stack()))
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				status := http.StatusInternalServerError
+				http.Error(w, http.StatusText(status), status)
 			}
 		}()
 		next.ServeHTTP(w, r)

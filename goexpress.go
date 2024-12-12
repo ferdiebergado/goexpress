@@ -24,15 +24,15 @@ type Router struct {
 //	}
 type Middleware func(http.Handler) http.Handler
 
-// NewRouter creates and returns a new instance of Router with an initialized
+// New creates and returns a new instance of Router with an initialized
 // http.ServeMux and an empty slice for middlewares.
 //
 // Example usage:
 //
-//	router := NewRouter()
+//	router := New()
 //	router.Get("/hello", helloHandler) // Register GET route with handler
 //	http.ListenAndServe(":8080", router) // Start server with Router
-func NewRouter() *Router {
+func New() *Router {
 	return &Router{
 		mux:         http.NewServeMux(),
 		middlewares: make([]Middleware, 0),
@@ -346,7 +346,7 @@ type groupHandler func(*Router) *Router
 //	/api/users
 //	/api/products
 func (r *Router) Group(prefix string, h groupHandler, m ...Middleware) {
-	router := h(NewRouter())
+	router := h(New())
 
 	r.Handle(prefix+"/", http.StripPrefix(prefix, router.mux), m...)
 }
