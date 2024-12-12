@@ -27,9 +27,9 @@ func (w *statusWriter) WriteHeader(statusCode int) {
 	}
 }
 
-// RequestLogger logs each incoming HTTP request including the method, URL, protocol,
+// LogRequest logs each incoming HTTP request including the method, URL, protocol,
 // status code, status text, and duration of the request. It wraps the handler to log this information.
-func RequestLogger(next http.Handler) http.Handler {
+func LogRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
@@ -55,10 +55,10 @@ func StripTrailingSlashes(next http.Handler) http.Handler {
 	})
 }
 
-// PanicRecovery is middleware that recovers from panics that occur during the execution
+// RecoverFromPanic is middleware that recovers from panics that occur during the execution
 // of the handler. If a panic is detected, it logs the error and stack trace, and returns
 // a 500 (Internal Server Error) response to the client.
-func PanicRecovery(next http.Handler) http.Handler {
+func RecoverFromPanic(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
