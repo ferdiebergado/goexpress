@@ -19,7 +19,11 @@ func TestNewRouter(t *testing.T) {
 func TestRouterHandle(t *testing.T) {
 	r := NewRouter()
 	r.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello, world!"))
+		_, err := w.Write([]byte("Hello, world!"))
+
+		if err != nil {
+			t.Errorf("write byte: %v", err)
+		}
 	})
 
 	req := httptest.NewRequest("GET", "/hello", nil)
@@ -42,7 +46,10 @@ func TestRouterHandle(t *testing.T) {
 func TestRouterGet(t *testing.T) {
 	r := NewRouter()
 	r.Get("/todos", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Todo list."))
+		_, err := w.Write([]byte("Todo list."))
+		if err != nil {
+			t.Errorf("write byte: %v", err)
+		}
 	})
 
 	req := httptest.NewRequest("GET", "/todos", nil)
@@ -65,7 +72,10 @@ func TestRouterGet(t *testing.T) {
 func TestRouterPost(t *testing.T) {
 	r := NewRouter()
 	r.Post("/submit", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Post submitted!"))
+		_, err := w.Write([]byte("Post submitted!"))
+		if err != nil {
+			t.Errorf("write byte: %v", err)
+		}
 	})
 
 	req := httptest.NewRequest("POST", "/submit", nil)
@@ -88,7 +98,10 @@ func TestRouterPost(t *testing.T) {
 func TestRouterPatch(t *testing.T) {
 	r := NewRouter()
 	r.Patch("/patch_update", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Post updated!"))
+		_, err := w.Write([]byte("Post updated!"))
+		if err != nil {
+			t.Errorf("write byte: %v", err)
+		}
 	})
 
 	req := httptest.NewRequest("PATCH", "/patch_update", nil)
@@ -110,7 +123,10 @@ func TestRouterPatch(t *testing.T) {
 func TestRouterPut(t *testing.T) {
 	r := NewRouter()
 	r.Put("/put_update", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Post updated!"))
+		_, err := w.Write([]byte("Post updated!"))
+		if err != nil {
+			t.Errorf("write byte: %v", err)
+		}
 	})
 
 	req := httptest.NewRequest("PUT", "/put_update", nil)
@@ -151,13 +167,19 @@ func TestGlobalMiddleware(t *testing.T) {
 	// Add a global middleware that appends "Processed: " to the response.
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("Processed: "))
+			_, err := w.Write([]byte("Processed: "))
+			if err != nil {
+				t.Errorf("write byte: %v", err)
+			}
 			next.ServeHTTP(w, r)
 		})
 	})
 
 	r.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello"))
+		_, err := w.Write([]byte("Hello"))
+		if err != nil {
+			t.Errorf("write byte: %v", err)
+		}
 	})
 
 	req := httptest.NewRequest("GET", "/hello", nil)
@@ -178,10 +200,16 @@ func TestRouteSpecificMiddleware(t *testing.T) {
 
 	// Add route-specific middleware that appends "Specific: " to the response.
 	r.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello"))
+		_, err := w.Write([]byte("Hello"))
+		if err != nil {
+			t.Errorf("write byte: %v", err)
+		}
 	}, func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("Specific: "))
+			_, err := w.Write([]byte("Specific: "))
+			if err != nil {
+				t.Errorf("write byte: %v", err)
+			}
 			next.ServeHTTP(w, r)
 		})
 	})
@@ -202,7 +230,10 @@ func TestRouteSpecificMiddleware(t *testing.T) {
 func TestMethodNotAllowed(t *testing.T) {
 	r := NewRouter()
 	r.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello"))
+		_, err := w.Write([]byte("Hello"))
+		if err != nil {
+			t.Errorf("write byte: %v", err)
+		}
 	})
 
 	req := httptest.NewRequest("POST", "/hello", nil)
@@ -221,7 +252,10 @@ func TestRouterHandleMethod(t *testing.T) {
 	r := NewRouter()
 
 	r.handleMethod("PUT", "/update", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Update successful"))
+		_, err := w.Write([]byte("Update successful"))
+		if err != nil {
+			t.Errorf("write byte: %v", err)
+		}
 	})
 
 	req := httptest.NewRequest("PUT", "/update", nil)
@@ -244,7 +278,10 @@ func TestRouterHandleMethod(t *testing.T) {
 func TestDeleteMethod(t *testing.T) {
 	r := NewRouter()
 	r.Delete("/remove", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Delete successful"))
+		_, err := w.Write([]byte("Delete successful"))
+		if err != nil {
+			t.Errorf("write byte: %v", err)
+		}
 	})
 
 	req := httptest.NewRequest("DELETE", "/remove", nil)
@@ -268,7 +305,10 @@ func TestConnect(t *testing.T) {
 	r := NewRouter()
 	r.Connect("/connect", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Connect response"))
+		_, err := w.Write([]byte("Connect response"))
+		if err != nil {
+			t.Errorf("write byte: %v", err)
+		}
 	})
 
 	req := httptest.NewRequest("CONNECT", "/connect", nil)
@@ -310,7 +350,10 @@ func TestTrace(t *testing.T) {
 	r := NewRouter()
 	r.Trace("/trace", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Trace response"))
+		_, err := w.Write([]byte("Trace response"))
+		if err != nil {
+			t.Errorf("write byte: %v", err)
+		}
 	})
 
 	req := httptest.NewRequest("TRACE", "/trace", nil)
@@ -410,6 +453,110 @@ func TestNotFound(t *testing.T) {
 	// Check the response body.
 	expectedBody := "Custom 404 - Page Not Found\n"
 	if body := rec.Body.String(); body != expectedBody {
+		t.Errorf("expected body %q, got %q", expectedBody, body)
+	}
+}
+
+func TestGroup(t *testing.T) {
+	r := NewRouter()
+
+	r.Group("/api/v1", func(router *Router) *Router {
+		router.Get("/user", func(w http.ResponseWriter, r *http.Request) {
+			_, err := w.Write([]byte("route group works"))
+			if err != nil {
+				t.Errorf("write byte: %v", err)
+			}
+		})
+
+		router.Post("/user", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusCreated)
+			_, err := w.Write([]byte("user route group post works"))
+			if err != nil {
+				t.Errorf("write byte: %v", err)
+			}
+		})
+
+		router.Get("/jobs", func(w http.ResponseWriter, r *http.Request) {
+			_, err := w.Write([]byte("jobs route group works"))
+			if err != nil {
+				t.Errorf("write byte: %v", err)
+			}
+		})
+
+		router.Group("/admin", func(r *Router) *Router {
+			r.Get("/users", func(w http.ResponseWriter, r *http.Request) {
+				_, err := w.Write([]byte("nested route group works"))
+				if err != nil {
+					t.Errorf("write byte: %v", err)
+				}
+			})
+
+			return r
+		})
+
+		return router
+	})
+
+	req := httptest.NewRequest("GET", "/api/v1/user", nil)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %d", resp.StatusCode)
+	}
+
+	expectedBody := "route group works"
+	if body := w.Body.String(); body != expectedBody {
+		t.Errorf("expected body %q, got %q", expectedBody, body)
+	}
+
+	req = httptest.NewRequest("GET", "/api/v1/jobs", nil)
+	w = httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	resp = w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %d", resp.StatusCode)
+	}
+
+	expectedBody = "jobs route group works"
+
+	if body := w.Body.String(); body != expectedBody {
+		t.Errorf("expected body %q, got %q", expectedBody, body)
+	}
+
+	req = httptest.NewRequest("POST", "/api/v1/user", nil)
+	w = httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	resp = w.Result()
+	if resp.StatusCode != http.StatusCreated {
+		t.Errorf("expected status created; got %d", resp.StatusCode)
+	}
+
+	expectedBody = "user route group post works"
+
+	if body := w.Body.String(); body != expectedBody {
+		t.Errorf("expected body %q, got %q", expectedBody, body)
+	}
+
+	req = httptest.NewRequest("GET", "/api/v1/admin/users", nil)
+	w = httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	resp = w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK; got %d", resp.StatusCode)
+	}
+
+	expectedBody = "nested route group works"
+
+	if body := w.Body.String(); body != expectedBody {
 		t.Errorf("expected body %q, got %q", expectedBody, body)
 	}
 }

@@ -104,6 +104,26 @@ You can pass any number of middlewares to a route.
 http.ListenAndServe(":8080", router)
 ```
 
+## Route Groups
+
+To simplify handling of multiple routes, a Group method is available on the Router. This makes it possible to specify multiple routes within the same prefix. Routes can be specified just like with the normal router meaning middlewares can also be included.
+
+Middlewares for the route group can also be specified as the last arguments.
+
+Nested route groups are also supported.
+
+```go
+router.Group("/api", func(r *Router) *Router {
+    r.Get("/users", listUsersHandler)
+    r.Post("/users", createUserHandler, authorizeMiddleware)
+    r.Get("/products", listProductsHandler)
+    r.Group("/shipments", func(router *Router) *Router {
+      router.Get("/status", statusHandler)
+    })
+    return r
+}, authMiddleware)
+```
+
 ## Serving Static Files
 
 go-express makes it easy to serve static files from a specified directory. Simply provide the name of the directory containing the static files to be served to the ServeStatic method of the router.
@@ -200,40 +220,101 @@ func main() {
 	router.Post("/api/todos", CreateTodo, AuthMiddleware)
 	router.Put("/api/todos/{id}", UpdateTodo, AuthMiddleware)
 	router.Delete("/api/todos/{id}", DeleteTodo, AuthMiddleware)
+  router.Group("/api", func(r *Router) *Router {
+      r.Get("/users", listUsersHandler)
+      r.Post("/users", createUserHandler, authorizeMiddleware)
+      r.Get("/products", listProductsHandler)
+      r.Group("/shipments", func(router *Router) *Router {
+        router.Get("/status", statusHandler)
+      })
+      return r
+  }, authMiddleware)
 
   // Start an http server with the router.
 	http.ListenAndServe(":8080", router)
 }
 
 func ListTodos(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Todo list"))
+	_,err:=w.Write([]byte("Todo list"))
+  		if err != nil {
+			t.Errorf("write byte: %v",err)
+		}
 }
 
 func CreateTodo(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusCreated)
+	_, err := w.WriteHeader(http.StatusCreated)
+  if err != nil {
+    t.Errorf("write byte: %v",err)
+  }
 }
 
 func UpdateTodo(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
-	w.Write([]byte("Todo with id "+id+" updated"))
+	_,err := w.Write([]byte("Todo with id "+id+" updated"))
+  if err != nil {
+    t.Errorf("write byte: %v",err)
+  }
 }
 
 func DeleteTodo(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNoContent)
+	_,err := w.WriteHeader(http.StatusNoContent)
+  if err != nil {
+    t.Errorf("write byte: %v",err)
+  }
+}
+
+func listUsersHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := w.Write([]byte("list of users"))
+  if err != nil {
+    t.Errorf("write byte: %v",err)
+  }
+}
+
+func createUsersHandler(w http.ResponseWriter, r *http.Request) {
+  w.WriteHeader(http.StatusCreated)
+	_, err := w.Write([]byte("user created"))
+  if err != nil {
+    t.Errorf("write byte: %v",err)
+  }
+}
+
+func listProductsHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := w.Write([]byte("list of products"))
+  if err != nil {
+    t.Errorf("write byte: %v",err)
+  }
+}
+
+func statusHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := w.Write([]byte("status of shipments"))
+  if err != nil {
+    t.Errorf("write byte: %v",err)
+  }
 }
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 
-		// Check for the Authorization header
-		if authHeader == "" || authHeader != "Bearer valid-token" { // replace "valid-token" with actual validation logic
+		if authHeader == "" || authHeader != "Bearer valid-token" {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		// Call the next handler in the chain
+		next.ServeHTTP(w, r)
+	})
+}
+
+func AuthorizeMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userId := r.Context.Value("userId")
+
+		if userId == nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }

@@ -300,3 +300,53 @@ func (r *Router) ServeStatic(path string) {
 func (r *Router) NotFound(handler http.HandlerFunc) {
 	r.Handle("/", handler)
 }
+
+// groupHandler is a function type that takes a pointer to a Router
+// and returns a modified Router. It is used to define sub-routes
+// within a group.
+//
+// Example:
+//
+//	apiRouter := func(r *Router) *Router {
+//	    r.Handle("/users", usersHandler)
+//	    r.Handle("/products", productsHandler)
+//	    return r
+//	}
+type groupHandler func(*Router) *Router
+
+// Group creates a new route group with a common prefix and applies the
+// given routerFunc to define sub-routes within that group.
+//
+// This method creates a new Router, passes it to the provided routerFunc
+// for route definition, and then registers the grouped routes under the
+// specified prefix. The routes within the group inherit the middlewares
+// of the parent Router.
+//
+// Routes can be specified just like with the normal router meaning middlewares can also be included.
+//
+// Middlewares for the route group can also be specified as the last arguments.
+//
+// Nested route groups are also supported.
+//
+// Parameters:
+//   - prefix: The common URL path prefix for the route group. It should
+//     not have a trailing slash as it will be appended automatically.
+//   - h: A groupHandler that defines the routes within the group.
+//
+// Example:
+//
+//	r.Group("/api", func(r *Router) *Router {
+//	    r.Get("/users", usersHandler)
+//	    r.Get("/products", productsHandler)
+//	    return r
+//	}, authMiddleware)
+//
+// This will register routes:
+//
+//	/api/users
+//	/api/products
+func (r *Router) Group(prefix string, h groupHandler, m ...Middleware) {
+	router := h(NewRouter())
+
+	r.Handle(prefix+"/", http.StripPrefix(prefix, router.mux), m...)
+}
