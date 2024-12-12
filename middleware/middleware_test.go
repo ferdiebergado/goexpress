@@ -10,7 +10,7 @@ import (
 
 func TestRequestLogger(t *testing.T) {
 	// Set up a dummy handler
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
@@ -18,7 +18,7 @@ func TestRequestLogger(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	// Wrap the handler with the RequestLogger middleware
-	middleware.RequestLogger(handler).ServeHTTP(rec, req)
+	middleware.LogRequest(handler).ServeHTTP(rec, req)
 
 	// Check if the status code is still OK
 	if rec.Code != http.StatusOK {
@@ -27,7 +27,7 @@ func TestRequestLogger(t *testing.T) {
 }
 
 func TestStripTrailingSlashes(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
@@ -44,7 +44,7 @@ func TestStripTrailingSlashes(t *testing.T) {
 }
 
 func TestPanicRecovery(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		panic("test panic")
 	})
 
@@ -52,7 +52,7 @@ func TestPanicRecovery(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	// Wrap the handler with the PanicRecovery middleware
-	middleware.PanicRecovery(handler).ServeHTTP(rec, req)
+	middleware.RecoverFromPanic(handler).ServeHTTP(rec, req)
 
 	// Check if it returns a 500 status code
 	if rec.Code != http.StatusInternalServerError {
@@ -66,12 +66,12 @@ func TestStatusWriterWithHTTPError(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	// Define a test handler that calls http.Error
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "Not Found", http.StatusNotFound)
 	})
 
 	// Wrap the handler with the RequestLogger middleware
-	loggedHandler := middleware.RequestLogger(handler)
+	loggedHandler := middleware.LogRequest(handler)
 
 	// Serve the HTTP request using the logged handler
 	loggedHandler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/", nil))
