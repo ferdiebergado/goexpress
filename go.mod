@@ -1,3 +1,3 @@
-module github.com/ferdiebergado/go-express
+module github.com/ferdiebergado/goexpress
 
 go 1.22
