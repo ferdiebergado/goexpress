@@ -1,7 +1,8 @@
 package goexpress
 
 import (
-	"log"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"runtime/debug"
 	"strings"
@@ -36,7 +37,8 @@ func LogRequest(next http.Handler) http.Handler {
 		next.ServeHTTP(sw, r)
 		duration := time.Since(start)
 		statusCode := sw.status
-		log.Printf("%s %s %s %d %s %s", r.Method, r.URL.Path, r.Proto, statusCode, http.StatusText(statusCode), duration)
+		// log.Printf("%s %s %s %d %s %s", r.Method, r.URL.Path, r.Proto, statusCode, http.StatusText(statusCode), duration)
+		slog.Info("Request:", "remote_address", r.RemoteAddr, "method", r.Method, "path", r.URL.Path, "proto", r.Proto, slog.Int("status_code", statusCode), slog.Duration("duration", duration))
 	})
 }
 
@@ -47,7 +49,7 @@ func StripTrailingSlashes(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" && strings.HasSuffix(r.URL.Path, "/") {
 			// Remove the trailing slash and redirect to the new URL.
-			log.Println("Removing trailing slash and redirecting...")
+			slog.Info("Removing trailing slash and redirecting...")
 			http.Redirect(w, r, strings.TrimSuffix(r.URL.Path, "/"), http.StatusMovedPermanently)
 			return
 		}
@@ -62,8 +64,10 @@ func RecoverFromPanic(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				log.Printf("Recover: %v", err)
-				log.Println(string(debug.Stack()))
+				slog.Error("panic occurred",
+					"panic", fmt.Sprint(r),
+					"stack_trace", string(debug.Stack()),
+				)
 				status := http.StatusInternalServerError
 				http.Error(w, http.StatusText(status), status)
 			}
