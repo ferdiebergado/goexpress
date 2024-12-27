@@ -1,5 +1,7 @@
 # go-express
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/ferdiebergado/goexpress)](https://goreportcard.com/report/github.com/ferdiebergado/goexpress) [![Go Reference](https://pkg.go.dev/badge/github.com/ferdiebergado/goexpress.svg)](https://pkg.go.dev/github.com/ferdiebergado/goexpress)
+
 Simple, dependency-free, and Express-styled HTTP Router written in Go.
 
 ## Features
