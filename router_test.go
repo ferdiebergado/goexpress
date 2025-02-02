@@ -1,15 +1,17 @@
-package goexpress
+package goexpress_test
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/ferdiebergado/goexpress"
 )
 
 // TestNewRouter ensures that a new Router is created successfully.
 func TestNewRouter(t *testing.T) {
-	r := New()
+	r := goexpress.New()
 	if r == nil {
 		t.Fatal("Expected non-nil router")
 	}
@@ -17,7 +19,7 @@ func TestNewRouter(t *testing.T) {
 
 // TestRouterHandle tests route registration and response.
 func TestRouterHandle(t *testing.T) {
-	r := New()
+	r := goexpress.New()
 	r.Get("/hello", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Hello, world!"))
 
@@ -44,7 +46,7 @@ func TestRouterHandle(t *testing.T) {
 
 // TestRouterPost ensures that POST routes are handled correctly.
 func TestRouterGet(t *testing.T) {
-	r := New()
+	r := goexpress.New()
 	r.Get("/todos", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Todo list."))
 		if err != nil {
@@ -70,7 +72,7 @@ func TestRouterGet(t *testing.T) {
 
 // TestRouterPost ensures that POST routes are handled correctly.
 func TestRouterPost(t *testing.T) {
-	r := New()
+	r := goexpress.New()
 	r.Post("/submit", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Post submitted!"))
 		if err != nil {
@@ -96,7 +98,7 @@ func TestRouterPost(t *testing.T) {
 
 // TestRouterPost ensures that POST routes are handled correctly.
 func TestRouterPatch(t *testing.T) {
-	r := New()
+	r := goexpress.New()
 	r.Patch("/patch_update", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Post updated!"))
 		if err != nil {
@@ -121,7 +123,7 @@ func TestRouterPatch(t *testing.T) {
 }
 
 func TestRouterPut(t *testing.T) {
-	r := New()
+	r := goexpress.New()
 	r.Put("/put_update", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Post updated!"))
 		if err != nil {
@@ -147,7 +149,7 @@ func TestRouterPut(t *testing.T) {
 
 // TestRouterNotFound ensures that the router returns error 404 for unassigned routes.
 func TestRouterNotFoundHandling(t *testing.T) {
-	r := New()
+	r := goexpress.New()
 
 	req := httptest.NewRequest("GET", "/notfound", nil)
 	w := httptest.NewRecorder()
@@ -162,7 +164,7 @@ func TestRouterNotFoundHandling(t *testing.T) {
 
 // TestGlobalMiddleware ensures that global middleware is applied to all routes.
 func TestGlobalMiddleware(t *testing.T) {
-	r := New()
+	r := goexpress.New()
 
 	// Add a global middleware that appends "Processed: " to the response.
 	r.Use(func(next http.Handler) http.Handler {
@@ -196,7 +198,7 @@ func TestGlobalMiddleware(t *testing.T) {
 
 // TestRouteSpecificMiddleware ensures route-specific middleware is applied correctly.
 func TestRouteSpecificMiddleware(t *testing.T) {
-	r := New()
+	r := goexpress.New()
 
 	// Add route-specific middleware that appends "Specific: " to the response.
 	r.Get("/hello", func(w http.ResponseWriter, _ *http.Request) {
@@ -228,7 +230,7 @@ func TestRouteSpecificMiddleware(t *testing.T) {
 
 // TestMethodNotAllowed ensures that the router returns a 405 status for unsupported methods.
 func TestMethodNotAllowed(t *testing.T) {
-	r := New()
+	r := goexpress.New()
 	r.Get("/hello", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Hello"))
 		if err != nil {
@@ -249,9 +251,9 @@ func TestMethodNotAllowed(t *testing.T) {
 
 // TestRouterHandleMethod tests that a specific HTTP method and path are handled correctly.
 func TestRouterHandleMethod(t *testing.T) {
-	r := New()
+	r := goexpress.New()
 
-	r.handleMethod("PUT", "/update", func(w http.ResponseWriter, _ *http.Request) {
+	r.Put("/update", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Update successful"))
 		if err != nil {
 			t.Errorf("write byte: %v", err)
@@ -276,7 +278,7 @@ func TestRouterHandleMethod(t *testing.T) {
 
 // TestDeleteMethod ensures that DELETE routes are handled correctly.
 func TestDeleteMethod(t *testing.T) {
-	r := New()
+	r := goexpress.New()
 	r.Delete("/remove", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Delete successful"))
 		if err != nil {
@@ -302,7 +304,7 @@ func TestDeleteMethod(t *testing.T) {
 
 // TestConnect tests the Connect method of the Router.
 func TestConnect(t *testing.T) {
-	r := New()
+	r := goexpress.New()
 	r.Connect("/connect", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("Connect response"))
@@ -329,7 +331,7 @@ func TestConnect(t *testing.T) {
 
 // TestOptions tests the Options method of the Router.
 func TestOptions(t *testing.T) {
-	r := New()
+	r := goexpress.New()
 	r.Options("/options", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
@@ -347,7 +349,7 @@ func TestOptions(t *testing.T) {
 
 // TestTrace tests the Trace method of the Router.
 func TestTrace(t *testing.T) {
-	r := New()
+	r := goexpress.New()
 	r.Trace("/trace", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("Trace response"))
@@ -374,7 +376,7 @@ func TestTrace(t *testing.T) {
 
 // TestHead tests the Head method of the Router.
 func TestHead(t *testing.T) {
-	r := New()
+	r := goexpress.New()
 	r.Head("/head", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("X-Custom-Header", "CustomValue")
 		w.WriteHeader(http.StatusOK)
@@ -405,7 +407,7 @@ func TestHead(t *testing.T) {
 // TestStaticPathHandling verifies that a request to a static file within a specified directory is correctly handled
 func TestStaticPathHandling(t *testing.T) {
 	const staticPath = "public"
-	r := New()
+	r := goexpress.New()
 	r.ServeStatic(staticPath)
 
 	req := httptest.NewRequest("GET", "/public/home.html", nil)
@@ -427,8 +429,8 @@ func TestStaticPathHandling(t *testing.T) {
 
 // TestNotFound verifies that the custom "Not Found" handler is called for undefined routes.
 func TestNotFound(t *testing.T) {
-	// Initialize the router.
-	router := New()
+	// Initialize the r.
+	r := goexpress.New()
 
 	// Define the custom "Not Found" handler.
 	notFoundHandler := func(w http.ResponseWriter, _ *http.Request) {
@@ -436,14 +438,14 @@ func TestNotFound(t *testing.T) {
 	}
 
 	// Set the custom "Not Found" handler in the router.
-	router.NotFound(notFoundHandler)
+	r.NotFound(notFoundHandler)
 
 	// Create a request to an undefined route.
 	req := httptest.NewRequest("GET", "/undefined", nil)
 	rec := httptest.NewRecorder()
 
 	// Serve the request using the router.
-	router.ServeHTTP(rec, req)
+	r.ServeHTTP(rec, req)
 
 	// Check the response status code.
 	if status := rec.Code; status != http.StatusNotFound {
@@ -459,8 +461,8 @@ func TestNotFound(t *testing.T) {
 
 func TestGroup(t *testing.T) {
 	// Test case 1: Basic group with no middleware
-	r := New()
-	r.Group("/api", func(gr *Router) *Router {
+	r := goexpress.New()
+	r.Group("/api", func(gr *goexpress.Router) *goexpress.Router {
 		gr.Get("/users", func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			_, err := w.Write([]byte("users"))
@@ -473,7 +475,7 @@ func TestGroup(t *testing.T) {
 
 	req := httptest.NewRequest("GET", "/api/users", nil)
 	rec := httptest.NewRecorder()
-	r.mux.ServeHTTP(rec, req)
+	r.ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusOK {
 		t.Errorf("Expected status code %d, got %d", http.StatusOK, rec.Code)
@@ -483,14 +485,14 @@ func TestGroup(t *testing.T) {
 	}
 
 	// Test case 2: Group with middleware
-	r = New()
+	r = goexpress.New()
 	middleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("X-Test", "test")
 			next.ServeHTTP(w, r)
 		})
 	}
-	r.Group("/v1", func(gr *Router) *Router {
+	r.Group("/v1", func(gr *goexpress.Router) *goexpress.Router {
 		gr.Get("/items", func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			_, err := w.Write([]byte("items"))
@@ -503,7 +505,7 @@ func TestGroup(t *testing.T) {
 
 	req = httptest.NewRequest("GET", "/v1/items", nil)
 	rec = httptest.NewRecorder()
-	r.mux.ServeHTTP(rec, req)
+	r.ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusOK {
 		t.Errorf("Expected status code %d, got %d", http.StatusOK, rec.Code)
@@ -516,9 +518,9 @@ func TestGroup(t *testing.T) {
 	}
 
 	// Test case 3: Nested groups
-	r = New()
-	r.Group("/admin", func(gr *Router) *Router {
-		gr.Group("/users", func(gr2 *Router) *Router {
+	r = goexpress.New()
+	r.Group("/admin", func(gr *goexpress.Router) *goexpress.Router {
+		gr.Group("/users", func(gr2 *goexpress.Router) *goexpress.Router {
 			gr2.Get("/", func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_, err := w.Write([]byte("admin users"))
@@ -532,7 +534,7 @@ func TestGroup(t *testing.T) {
 	})
 	req = httptest.NewRequest("GET", "/admin/users/", nil)
 	rec = httptest.NewRecorder()
-	r.mux.ServeHTTP(rec, req)
+	r.ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusOK {
 		t.Errorf("Expected status code %d, got %d", http.StatusOK, rec.Code)
@@ -542,8 +544,8 @@ func TestGroup(t *testing.T) {
 	}
 
 	// Test case 4:  Empty Prefix
-	r = New()
-	r.Group("", func(gr *Router) *Router {
+	r = goexpress.New()
+	r.Group("", func(gr *goexpress.Router) *goexpress.Router {
 		gr.Get("/test", func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			_, err := w.Write([]byte("test"))
@@ -555,7 +557,7 @@ func TestGroup(t *testing.T) {
 	})
 	req = httptest.NewRequest("GET", "/test", nil)
 	rec = httptest.NewRecorder()
-	r.mux.ServeHTTP(rec, req)
+	r.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Errorf("Expected status code %d, got %d", http.StatusOK, rec.Code)
 	}
