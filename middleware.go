@@ -3,6 +3,7 @@ package goexpress
 import (
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"runtime/debug"
 	"strings"
@@ -34,10 +35,14 @@ func LogRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
+
 		next.ServeHTTP(sw, r)
+
 		duration := time.Since(start)
 		statusCode := sw.status
-		slog.Info("Request:", "user-agent", r.UserAgent(), "remote_address", r.RemoteAddr, "method", r.Method, "path", r.URL.Path, "proto", r.Proto, slog.Int("status_code", statusCode), slog.Duration("duration", duration))
+		slog.Info("Request:", "user-agent", r.UserAgent(), "remote_address", getIPAddress(r),
+			"method", r.Method, "path", r.URL.Path, "proto", r.Proto,
+			slog.Int("status_code", statusCode), slog.Duration("duration", duration))
 	})
 }
 
@@ -74,4 +79,25 @@ func RecoverFromPanic(next http.Handler) http.Handler {
 		}()
 		next.ServeHTTP(w, r)
 	})
+}
+
+// getIPAddress extracts the client's IP address from the request.
+func getIPAddress(r *http.Request) string {
+	if ip := r.Header.Get("X-Real-IP"); ip != "" {
+		return ip
+	}
+
+	if forwardedFor := r.Header.Values("X-Forwarded-For"); len(forwardedFor) > 0 {
+		firstIP := forwardedFor[0]
+		ips := strings.Split(firstIP, ",")
+		if len(ips) > 0 {
+			return strings.TrimSpace(ips[0])
+		}
+	}
+
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return ip
 }
