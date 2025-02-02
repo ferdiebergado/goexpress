@@ -64,10 +64,11 @@ func RecoverFromPanic(next http.Handler) http.Handler {
 		defer func() {
 			if err := recover(); err != nil {
 				slog.Error("panic occurred",
-					"panic", fmt.Sprint(r),
+					"reason", err,
+					"request", fmt.Sprint(r),
 					"stack_trace", string(debug.Stack()),
 				)
-				status := http.StatusInternalServerError
+				const status = http.StatusInternalServerError
 				http.Error(w, http.StatusText(status), status)
 			}
 		}()
