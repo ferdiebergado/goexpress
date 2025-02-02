@@ -2,7 +2,6 @@ package goexpress
 
 import (
 	"net/http"
-	"strings"
 )
 
 // Router is a custom HTTP router built on top of http.ServeMux with support for global
@@ -101,8 +100,6 @@ func (r *Router) Handle(pattern string, handler http.Handler, middlewares ...Mid
 func (r *Router) handleMethod(method, path string, handler http.HandlerFunc, middlewares ...Middleware) {
 	if path == "" {
 		path = "/"
-	} else if path != "/" {
-		path = strings.TrimSuffix(path, "/")
 	}
 
 	pattern := method + " " + path

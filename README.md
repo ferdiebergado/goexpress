@@ -56,7 +56,6 @@ func main() {
 	router := goexpress.New()
 
 	router.Use(goexpress.RequestLogger)
-	router.Use(goexpress.StripTrailingSlashes)
 	router.Use(goexpress.PanicRecovery)
 }
 ```
@@ -209,7 +208,6 @@ func main() {
 
 	// Register global middlewares.
 	router.Use(goexpress.RequestLogger)
-	router.Use(goexpress.StripTrailingSlashes)
 	router.Use(goexpress.PanicRecovery)
 
 	// Serve static files.
