@@ -298,7 +298,7 @@ func (r *Router) ServeStatic(path string) {
 // This will display "Custom 404 - Page Not Found" when a request is made to
 // an undefined route.
 func (r *Router) NotFound(handler http.HandlerFunc) {
-	r.Handle("/", handler)
+	r.mux.Handle("/", handler)
 }
 
 // groupHandler is a function type that takes a pointer to a Router
