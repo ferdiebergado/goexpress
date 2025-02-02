@@ -1,6 +1,9 @@
 package goexpress
 
-import "net/http"
+import (
+	"net/http"
+	"strings"
+)
 
 // Router is a custom HTTP router built on top of http.ServeMux with support for global
 // and route-specific middleware. It allows easy route registration for common HTTP methods
@@ -96,6 +99,12 @@ func (r *Router) Handle(pattern string, handler http.Handler, middlewares ...Mid
 //
 //	router.handleMethod("GET", "/info", infoHandler)
 func (r *Router) handleMethod(method, path string, handler http.HandlerFunc, middlewares ...Middleware) {
+	if path == "" {
+		path = "/"
+	} else if path != "/" {
+		path = strings.TrimSuffix(path, "/")
+	}
+
 	pattern := method + " " + path
 	r.Handle(pattern, handler, middlewares...)
 }

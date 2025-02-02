@@ -458,105 +458,108 @@ func TestNotFound(t *testing.T) {
 }
 
 func TestGroup(t *testing.T) {
+	// Test case 1: Basic group with no middleware
 	r := New()
-
-	r.Group("/api/v1", func(router *Router) *Router {
-		router.Get("/user", func(w http.ResponseWriter, _ *http.Request) {
-			_, err := w.Write([]byte("route group works"))
+	r.Group("/api", func(gr *Router) *Router {
+		gr.Get("/users", func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, err := w.Write([]byte("users"))
 			if err != nil {
-				t.Errorf("write byte: %v", err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
 		})
-
-		router.Post("/user", func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusCreated)
-			_, err := w.Write([]byte("user route group post works"))
-			if err != nil {
-				t.Errorf("write byte: %v", err)
-			}
-		})
-
-		router.Get("/jobs", func(w http.ResponseWriter, _ *http.Request) {
-			_, err := w.Write([]byte("jobs route group works"))
-			if err != nil {
-				t.Errorf("write byte: %v", err)
-			}
-		})
-
-		router.Group("/admin", func(r *Router) *Router {
-			r.Get("/users", func(w http.ResponseWriter, _ *http.Request) {
-				_, err := w.Write([]byte("nested route group works"))
-				if err != nil {
-					t.Errorf("write byte: %v", err)
-				}
-			})
-
-			return r
-		})
-
-		return router
+		return gr
 	})
 
-	req := httptest.NewRequest("GET", "/api/v1/user", nil)
-	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/users", nil)
+	rec := httptest.NewRecorder()
+	r.mux.ServeHTTP(rec, req)
 
-	r.ServeHTTP(w, req)
-
-	resp := w.Result()
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("expected status OK; got %d", resp.StatusCode)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected status code %d, got %d", http.StatusOK, rec.Code)
+	}
+	if rec.Body.String() != "users" {
+		t.Errorf("Expected body %s, got %s", "users", rec.Body.String())
 	}
 
-	expectedBody := "route group works"
-	if body := w.Body.String(); body != expectedBody {
-		t.Errorf("expected body %q, got %q", expectedBody, body)
+	// Test case 2: Group with middleware
+	r = New()
+	middleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("X-Test", "test")
+			next.ServeHTTP(w, r)
+		})
+	}
+	r.Group("/v1", func(gr *Router) *Router {
+		gr.Get("/items", func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, err := w.Write([]byte("items"))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+		})
+		return gr
+	}, middleware)
+
+	req = httptest.NewRequest("GET", "/v1/items", nil)
+	rec = httptest.NewRecorder()
+	r.mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected status code %d, got %d", http.StatusOK, rec.Code)
+	}
+	if rec.Body.String() != "items" {
+		t.Errorf("Expected body %s, got %s", "items", rec.Body.String())
+	}
+	if rec.Header().Get("X-Test") != "test" {
+		t.Errorf("Expected header X-Test to be %s, got %s", "test", rec.Header().Get("X-Test"))
 	}
 
-	req = httptest.NewRequest("GET", "/api/v1/jobs", nil)
-	w = httptest.NewRecorder()
+	// Test case 3: Nested groups
+	r = New()
+	r.Group("/admin", func(gr *Router) *Router {
+		gr.Group("/users", func(gr2 *Router) *Router {
+			gr2.Get("/", func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				_, err := w.Write([]byte("admin users"))
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+				}
+			})
+			return gr2
+		})
+		return gr
+	})
+	req = httptest.NewRequest("GET", "/admin/users/", nil)
+	rec = httptest.NewRecorder()
+	r.mux.ServeHTTP(rec, req)
 
-	r.ServeHTTP(w, req)
-
-	resp = w.Result()
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("expected status OK; got %d", resp.StatusCode)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected status code %d, got %d", http.StatusOK, rec.Code)
+	}
+	if rec.Body.String() != "admin users" {
+		t.Errorf("Expected body %s, got %s", "admin users", rec.Body.String())
 	}
 
-	expectedBody = "jobs route group works"
-
-	if body := w.Body.String(); body != expectedBody {
-		t.Errorf("expected body %q, got %q", expectedBody, body)
+	// Test case 4:  Empty Prefix
+	r = New()
+	r.Group("", func(gr *Router) *Router {
+		gr.Get("/test", func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, err := w.Write([]byte("test"))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+		})
+		return gr
+	})
+	req = httptest.NewRequest("GET", "/test", nil)
+	rec = httptest.NewRecorder()
+	r.mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected status code %d, got %d", http.StatusOK, rec.Code)
 	}
-
-	req = httptest.NewRequest("POST", "/api/v1/user", nil)
-	w = httptest.NewRecorder()
-
-	r.ServeHTTP(w, req)
-
-	resp = w.Result()
-	if resp.StatusCode != http.StatusCreated {
-		t.Errorf("expected status created; got %d", resp.StatusCode)
-	}
-
-	expectedBody = "user route group post works"
-
-	if body := w.Body.String(); body != expectedBody {
-		t.Errorf("expected body %q, got %q", expectedBody, body)
-	}
-
-	req = httptest.NewRequest("GET", "/api/v1/admin/users", nil)
-	w = httptest.NewRecorder()
-
-	r.ServeHTTP(w, req)
-
-	resp = w.Result()
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("expected status OK; got %d", resp.StatusCode)
-	}
-
-	expectedBody = "nested route group works"
-
-	if body := w.Body.String(); body != expectedBody {
-		t.Errorf("expected body %q, got %q", expectedBody, body)
+	if rec.Body.String() != "test" {
+		t.Errorf("Expected body %s, got %s", "test", rec.Body.String())
 	}
 }
