@@ -15,18 +15,28 @@ import (
 // inspect the status code after a request is handled.
 type statusWriter struct {
 	http.ResponseWriter
-	status     int
-	headerSent bool
+	statusCode    int
+	headerWritten bool
 }
 
 // WriteHeader sets the HTTP status code for the response and records it in the statusWriter.
-// This allows middleware to track which status code was sent to the client.
+// This allows middleware to track which status code was written to the client.
 func (w *statusWriter) WriteHeader(statusCode int) {
-	if !w.headerSent { // check if header has already been sent
-		w.status = statusCode
-		w.headerSent = true // mark the header as sent
-		w.ResponseWriter.WriteHeader(statusCode)
+	if !w.headerWritten {
+		w.statusCode = statusCode
+		w.headerWritten = true
 	}
+
+	w.ResponseWriter.WriteHeader(statusCode)
+}
+
+// Override Write to implicitly call WriteHeader(200) if needed
+func (w *statusWriter) Write(b []byte) (int, error) {
+	if !w.headerWritten {
+		w.WriteHeader(http.StatusOK)
+	}
+
+	return w.ResponseWriter.Write(b)
 }
 
 // LogRequest logs each incoming HTTP request including the method, URL, protocol,
@@ -34,12 +44,12 @@ func (w *statusWriter) WriteHeader(statusCode int) {
 func LogRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
+		sw := &statusWriter{ResponseWriter: w, statusCode: http.StatusOK}
 
 		next.ServeHTTP(sw, r)
 
 		duration := time.Since(start)
-		statusCode := sw.status
+		statusCode := sw.statusCode
 		slog.Info("Request:", "user-agent", r.UserAgent(), "remote_address", getIPAddress(r),
 			"method", r.Method, "path", r.URL.Path, "proto", r.Proto,
 			slog.Int("status_code", statusCode), slog.Duration("duration", duration))
