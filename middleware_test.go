@@ -8,6 +8,11 @@ import (
 	"github.com/ferdiebergado/goexpress"
 )
 
+const (
+	errBodyFmt   = "expected body %q, got %q"
+	errStatusFmt = "expected status %d, got %d"
+)
+
 func TestRequestLogger(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -19,7 +24,7 @@ func TestRequestLogger(t *testing.T) {
 	goexpress.LogRequest(handler).ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, rec.Code)
+		t.Errorf(errStatusFmt, http.StatusOK, rec.Code)
 	}
 }
 
@@ -32,9 +37,8 @@ func TestStripTrailingSlashes(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	goexpress.StripTrailingSlashes(handler).ServeHTTP(rec, req)
-
 	if rec.Code != http.StatusMovedPermanently {
-		t.Errorf("expected status %d, got %d", http.StatusMovedPermanently, rec.Code)
+		t.Errorf(errStatusFmt, http.StatusMovedPermanently, rec.Code)
 	}
 }
 
@@ -49,27 +53,74 @@ func TestPanicRecovery(t *testing.T) {
 	goexpress.RecoverFromPanic(handler).ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusInternalServerError {
-		t.Errorf("expected status %d, got %d", http.StatusInternalServerError, rec.Code)
+		t.Errorf(errStatusFmt, http.StatusInternalServerError, rec.Code)
+	}
+}
+
+func TestStatusWriterWithDefaultStatus(t *testing.T) {
+	const expectedBody = "hello"
+	const expectedStatus = http.StatusOK
+
+	recorder := httptest.NewRecorder()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, err := w.Write([]byte(expectedBody))
+		if err != nil {
+			t.Fatal("failed to write response:", err)
+		}
+	})
+
+	loggedHandler := goexpress.LogRequest(handler)
+	loggedHandler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/", nil))
+
+	if recorder.Code != expectedStatus {
+		t.Errorf(errStatusFmt, expectedStatus, recorder.Code)
+	}
+
+	if recorder.Body.String() != expectedBody {
+		t.Errorf(errBodyFmt, expectedBody, recorder.Body.String())
+	}
+}
+
+func TestStatusWriterWithExplicitStatusOK(t *testing.T) {
+	const expectedBody = "hello"
+	const expectedStatus = http.StatusOK
+
+	recorder := httptest.NewRecorder()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(expectedStatus)
+		_, err := w.Write([]byte(expectedBody))
+		if err != nil {
+			t.Fatal("failed to write response:", err)
+		}
+	})
+
+	loggedHandler := goexpress.LogRequest(handler)
+	loggedHandler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/", nil))
+
+	if recorder.Code != expectedStatus {
+		t.Errorf(errStatusFmt, expectedStatus, recorder.Code)
+	}
+
+	if recorder.Body.String() != expectedBody {
+		t.Errorf(errBodyFmt, expectedBody, recorder.Body.String())
 	}
 }
 
 func TestStatusWriterWithHTTPError(t *testing.T) {
 	recorder := httptest.NewRecorder()
-
 	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "Not Found", http.StatusNotFound)
 	})
 
 	loggedHandler := goexpress.LogRequest(handler)
-
 	loggedHandler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	if recorder.Code != http.StatusNotFound {
-		t.Errorf("expected recorder status code %d, got %d", http.StatusNotFound, recorder.Code)
+		t.Errorf(errStatusFmt, http.StatusNotFound, recorder.Code)
 	}
 
-	expectedBody := "Not Found\n" // http.Error appends a newline to the error message
+	const expectedBody = "Not Found\n"
 	if recorder.Body.String() != expectedBody {
-		t.Errorf("expected body %q, got %q", expectedBody, recorder.Body.String())
+		t.Errorf(errBodyFmt, expectedBody, recorder.Body.String())
 	}
 }
