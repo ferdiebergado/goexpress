@@ -1,8 +1,6 @@
 package goexpress
 
-import (
-	"net/http"
-)
+import "net/http"
 
 // Router is a custom HTTP router built on top of http.ServeMux with support for global
 // and route-specific middleware. It allows easy route registration for common HTTP methods
