@@ -63,8 +63,7 @@ func (r *Router) wrap(handler http.Handler, middlewares []func(next http.Handler
 //
 //	router.Handle("GET /static", staticFileHandler, authMiddleware)
 func (r *Router) Handle(pattern string, handler http.Handler, middlewares ...func(next http.Handler) http.Handler) {
-	finalHandler := r.wrap(handler, middlewares)       // Wrap with route-specific middleware
-	finalHandler = r.wrap(finalHandler, r.middlewares) // Wrap with global middleware
+	finalHandler := r.wrap(handler, middlewares) // Wrap with route-specific middleware
 	r.mux.Handle(pattern, finalHandler)
 }
 
@@ -246,7 +245,8 @@ func (r *Router) Head(path string, handler http.HandlerFunc, middlewares ...func
 //
 //	http.ListenAndServe(":8080", router)
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	r.mux.ServeHTTP(w, req)
+	finalHandler := r.wrap(r.mux, r.middlewares) // Wrap with global middleware
+	finalHandler.ServeHTTP(w, req)
 }
 
 // ServeStatic serves static files from the specified local directory path.
