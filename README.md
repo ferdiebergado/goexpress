@@ -1,4 +1,4 @@
-# go-express
+# goexpress
 
 ![Github Actions](https://github.com/ferdiebergado/goexpress/actions/workflows/go.yml/badge.svg?event=push) [![Go Report Card](https://goreportcard.com/badge/github.com/ferdiebergado/goexpress)](https://goreportcard.com/report/github.com/ferdiebergado/goexpress) [![Go Reference](https://pkg.go.dev/badge/github.com/ferdiebergado/goexpress.svg)](https://pkg.go.dev/github.com/ferdiebergado/goexpress)
 
@@ -20,7 +20,7 @@ Simple, dependency-free, and Express-styled HTTP Router written in Go.
 ## Installation
 
 ```sh
-go get github.com/ferdiebergado/go-express
+go get github.com/ferdiebergado/goexpress
 ```
 
 ## Usage
@@ -28,13 +28,13 @@ go get github.com/ferdiebergado/go-express
 1. Import the router.
 
 ```go
-import "github.com/ferdiebergado/go-express"
+import "github.com/ferdiebergado/goexpress"
 ```
 
 2. Create a router.
 
 ```go
-router := router.New()
+router := goexpress.New()
 ```
 
 3. Register global middlewares.
@@ -45,12 +45,10 @@ Global middlewares are registered by calling the Use() method on the router.
 router.Use(goexpress.RequestLogger)
 ```
 
-go-express has some commonly-used middlewares available out of the box, just import it from the middleware package.
+goexpress has some commonly-used middlewares available out of the box, just import it from the middleware package.
 
 ```go
-import (
-	"github.com/ferdiebergado/go-express"
-)
+import "github.com/ferdiebergado/goexpress"
 
 func main() {
 	router := goexpress.New()
@@ -117,8 +115,8 @@ router.Group("/api", func(r *Router) *Router {
     r.Get("/users", listUsersHandler)
     r.Post("/users", createUserHandler, authorizeMiddleware)
     r.Get("/products", listProductsHandler)
-    r.Group("/shipments", func(router *Router) *Router {
-      router.Get("/status", statusHandler)
+    r.Group("/shipments", func(shipmentRouter *Router) *Router {
+      shipmentRouter.Get("/status", statusHandler)
     })
     return r
 }, authMiddleware)
@@ -126,7 +124,7 @@ router.Group("/api", func(r *Router) *Router {
 
 ## Serving Static Files
 
-go-express makes it easy to serve static files from a specified directory. Simply provide the name of the directory containing the static files to be served to the ServeStatic method of the router.
+goexpress makes it easy to serve static files from a specified directory. Simply provide the name of the directory containing the static files to be served to the ServeStatic method of the router.
 
 ```go
 router.ServeStatic("assets")
@@ -145,7 +143,7 @@ You can then add this to the head tag of your html:
 
 ## Custom 404 Error Handler
 
-By default, go-express returns a 404 status code and plain status text when an unregistered route is requested. To customize this behavior, pass an http handler function to the NotFound method of the router.
+By default, goexpress returns a 404 status code and plain status text when an unregistered route is requested. To customize this behavior, pass an http handler function to the NotFound method of the router.
 
 Example:
 
@@ -198,13 +196,13 @@ package main
 import (
 	"net/http"
 
-	"github.com/ferdiebergado/go-express"
+	"github.com/ferdiebergado/goexpress"
 )
 
 func main() {
 
 	// Create the router.
-	router := router.New()
+	router := goexpress.New()
 
 	// Register global middlewares.
 	router.Use(goexpress.RequestLogger)
@@ -222,8 +220,8 @@ func main() {
       r.Get("/users", listUsersHandler)
       r.Post("/users", createUserHandler, authorizeMiddleware)
       r.Get("/products", listProductsHandler)
-      r.Group("/shipments", func(router *Router) *Router {
-        router.Get("/status", statusHandler)
+      r.Group("/shipments", func(shipmentRouter *Router) *Router {
+        shipmentRouter.Get("/status", statusHandler)
       })
       return r
   }, authMiddleware)
@@ -320,4 +318,4 @@ func AuthorizeMiddleware(next http.Handler) http.Handler {
 
 ## License
 
-go-express is open-sourced software licensed under [MIT License](https://github.com/ferdiebergado/go-express/blob/main/LICENSE).
+goexpress is open-sourced software licensed under [MIT License](https://github.com/ferdiebergado/goexpress/blob/main/LICENSE).
