@@ -2,24 +2,87 @@ package goexpress
 
 import "net/http"
 
+// Router defines an interface for handling HTTP routing.
+// It provides methods for registering routes for various HTTP methods,
+// applying middleware, grouping routes under a common prefix, serving
+// static files, and defining a custom "not found" handler.
+//
+// Implementations of this interface are responsible for matching incoming
+// HTTP requests to the defined routes and executing the associated handler
+// functions, while also applying any specified middleware.
 type Router interface {
+	// Use registers a global middleware function that will be executed for all routes.
+	// Middleware functions are executed in the order they are registered.
 	Use(middleware func(next http.Handler) http.Handler)
+
+	// Get registers a route for HTTP GET requests matching the given pattern.
+	// The handlerFunc will be executed for matching requests, after any global
+	// and route-specific middleware have been processed.
 	Get(pattern string, handlerFunc http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler)
+
+	// Post registers a route for HTTP POST requests matching the given pattern.
+	// The handlerFunc will be executed for matching requests, after any global
+	// and route-specific middleware have been processed.
 	Post(pattern string, handlerFunc http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler)
+
+	// Put registers a route for HTTP PUT requests matching the given pattern.
+	// The handlerFunc will be executed for matching requests, after any global
+	// and route-specific middleware have been processed.
 	Put(pattern string, handlerFunc http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler)
+
+	// Patch registers a route for HTTP PATCH requests matching the given pattern.
+	// The handlerFunc will be executed for matching requests, after any global
+	// and route-specific middleware have been processed.
 	Patch(pattern string, handlerFunc http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler)
+
+	// Delete registers a route for HTTP DELETE requests matching the given pattern.
+	// The handlerFunc will be executed for matching requests, after any global
+	// and route-specific middleware have been processed.
 	Delete(pattern string, handlerFunc http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler)
+
+	// Options registers a route for HTTP OPTIONS requests matching the given pattern.
+	// The handlerFunc will be executed for matching requests, after any global
+	// and route-specific middleware have been processed.
 	Options(pattern string, handlerFunc http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler)
+
+	// Connect registers a route for HTTP CONNECT requests matching the given pattern.
+	// The handlerFunc will be executed for matching requests, after any global
+	// and route-specific middleware have been processed.
 	Connect(pattern string, handlerFunc http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler)
+
+	// Trace registers a route for HTTP TRACE requests matching the given pattern.
+	// The handlerFunc will be executed for matching requests, after any global
+	// and route-specific middleware have been processed.
 	Trace(pattern string, handlerFunc http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler)
+
+	// Head registers a route for HTTP HEAD requests matching the given pattern.
+	// The handlerFunc will be executed for matching requests, after any global
+	// and route-specific middleware have been processed.
 	Head(pattern string, handlerFunc http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler)
+
+	// Group creates a new sub-router with the given pattern as a prefix.
+	// Middleware provided here will be applied to all routes defined within the group.
+	// The groupFunc receives the sub-router as an argument, allowing for the
+	// definition of routes within the group.
 	Group(pattern string, groupFunc func(router Router) Router, middlewares ...func(next http.Handler) http.Handler)
+
+	// ServeStatic registers a route to serve static files from the given directory.
+	// Requests matching files within this directory will be served directly.
 	ServeStatic(dir string)
+
+	// NotFound registers a handler function to be executed when no other route matches
+	// the incoming request. If no NotFound handler is registered, a default "404 Not Found"
+	// response is typically sent.
 	NotFound(handlerFunc http.HandlerFunc)
+
+	// ServeHTTP makes the Router implement the http.Handler interface.
+	// It is the main entry point for processing HTTP requests. It matches the
+	// request against the registered routes, executes any applicable middleware,
+	// and calls the corresponding handler function.
 	ServeHTTP(w http.ResponseWriter, r *http.Request)
 }
 
-// Router is a custom HTTP router built on top of http.ServeMux with support for global
+// router is a custom HTTP router built on top of http.ServeMux with support for global
 // and route-specific middleware. It allows easy route registration for common HTTP methods
 // (GET, POST, PATCH, PUT, DELETE) and provides a flexible middleware chain for request handling.
 type router struct {
@@ -27,12 +90,12 @@ type router struct {
 	middlewares []func(next http.Handler) http.Handler // slice to store global middleware functions
 }
 
-// New creates and returns a new instance of Router with an initialized
+// New creates and returns a custome HTTP router that satisfies the Router interface with an initialized
 // http.ServeMux and an empty slice for middlewares.
 //
 // Example usage:
 //
-//	router := New()
+//	router := goexpress.New()
 //	router.Get("/hello", helloHandler) // Register GET route with handler
 //	http.ListenAndServe(":8080", router) // Start server with Router
 func New() Router {
@@ -297,7 +360,7 @@ func (r *router) ServeStatic(path string) {
 //
 // Example usage:
 //
-//	router := NewRouter()
+//	router := goexpress.New()
 //	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
 //	    http.Error(w, "Custom 404 - Page Not Found", http.StatusNotFound)
 //	})
@@ -307,19 +370,6 @@ func (r *router) ServeStatic(path string) {
 func (r *router) NotFound(handler http.HandlerFunc) {
 	r.mux.Handle("/", handler)
 }
-
-// groupHandler is a function type that takes a pointer to a Router
-// and returns a modified Router. It is used to define sub-routes
-// within a group.
-//
-// Example:
-//
-//	apiRouter := func(r *Router) *Router {
-//	    r.Handle("/users", usersHandler)
-//	    r.Handle("/products", productsHandler)
-//	    return r
-//	}
-type groupHandler func(Router) Router
 
 // Group creates a new route group with a common prefix and applies the
 // given routerFunc to define sub-routes within that group.
