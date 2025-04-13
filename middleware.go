@@ -49,10 +49,9 @@ func LogRequest(next http.Handler) http.Handler {
 		next.ServeHTTP(sw, r)
 
 		duration := time.Since(start)
-		statusCode := sw.statusCode
-		slog.Info("Request:", "user-agent", r.UserAgent(), "remote_address", getIPAddress(r),
+		slog.Info("New Request", "user_agent", r.UserAgent(), "remote_address", getIPAddress(r),
 			"method", r.Method, "path", r.URL.Path, "proto", r.Proto,
-			slog.Int("status_code", statusCode), slog.Duration("duration", duration))
+			slog.Int("status_code", sw.statusCode), slog.Duration("duration", duration))
 	})
 }
 
