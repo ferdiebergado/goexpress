@@ -462,7 +462,7 @@ func TestNotFound(t *testing.T) {
 func TestGroup(t *testing.T) {
 	// Test case 1: Basic group with no middleware
 	r := goexpress.New()
-	r.Group("/api", func(gr goexpress.Router) goexpress.Router {
+	r.Group("/api", func(gr *goexpress.Router) *goexpress.Router {
 		gr.Get("/users", func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			_, err := w.Write([]byte("users"))
@@ -492,7 +492,7 @@ func TestGroup(t *testing.T) {
 			next.ServeHTTP(w, r)
 		})
 	}
-	r.Group("/v1", func(gr goexpress.Router) goexpress.Router {
+	r.Group("/v1", func(gr *goexpress.Router) *goexpress.Router {
 		gr.Get("/items", func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			_, err := w.Write([]byte("items"))
@@ -519,8 +519,8 @@ func TestGroup(t *testing.T) {
 
 	// Test case 3: Nested groups
 	r = goexpress.New()
-	r.Group("/admin", func(gr goexpress.Router) goexpress.Router {
-		gr.Group("/users", func(gr2 goexpress.Router) goexpress.Router {
+	r.Group("/admin", func(gr *goexpress.Router) *goexpress.Router {
+		gr.Group("/users", func(gr2 *goexpress.Router) *goexpress.Router {
 			gr2.Get("/", func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_, err := w.Write([]byte("admin users"))
@@ -545,7 +545,7 @@ func TestGroup(t *testing.T) {
 
 	// Test case 4:  Empty Prefix
 	r = goexpress.New()
-	r.Group("", func(gr goexpress.Router) goexpress.Router {
+	r.Group("", func(gr *goexpress.Router) *goexpress.Router {
 		gr.Get("/test", func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			_, err := w.Write([]byte("test"))
