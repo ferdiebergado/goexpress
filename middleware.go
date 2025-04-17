@@ -93,7 +93,6 @@ func RecoverFromPanic(next http.Handler) http.Handler {
 			if err := recover(); err != nil {
 				slog.Error("panic occurred",
 					"reason", err,
-					"request", fmt.Sprint(r),
 					"stack_trace", string(debug.Stack()),
 				)
 				const status = http.StatusInternalServerError
