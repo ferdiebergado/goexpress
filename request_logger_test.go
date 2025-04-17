@@ -1,7 +1,10 @@
 package goexpress_test
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -221,4 +224,95 @@ func runTestCase(t *testing.T, tc testcase) {
 			t.Error("Logged duration should be positive")
 		}
 	})
+}
+
+func TestParseRequestBody(t *testing.T) {
+	tests := []struct {
+		name          string
+		requestBody   io.Reader
+		contentType   string
+		expectedBody  []byte
+		expectedError string
+	}{
+		{
+			name:         "Non-empty body",
+			requestBody:  bytes.NewBufferString("test request body"),
+			expectedBody: []byte("test request body"),
+		},
+		{
+			name:         "Empty body",
+			requestBody:  nil,
+			expectedBody: []byte{},
+		},
+		{
+			name:          "Error reading body",
+			requestBody:   &errorReader{},
+			expectedBody:  []byte{},
+			expectedError: "error reading request body: test error",
+		},
+		{
+			name:         "JSON body",
+			requestBody:  bytes.NewBufferString(`{"key": "value", "number": "123"}`),
+			contentType:  "application/json",
+			expectedBody: []byte(`{"key": "value", "number": "123"}`),
+		},
+		{
+			name:         "Empty JSON body",
+			requestBody:  bytes.NewBufferString(`{}`),
+			contentType:  "application/json",
+			expectedBody: []byte(`{}`),
+		},
+		{
+			name:         "Nil request body (again)",
+			requestBody:  nil,
+			expectedBody: []byte{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest("POST", "/test", tt.requestBody)
+			if tt.contentType != "" {
+				req.Header.Set("Content-Type", tt.contentType)
+			}
+
+			actualBody, actualError := goexpress.ParseRequestBody(req)
+
+			if !bytes.Equal(actualBody, tt.expectedBody) {
+				t.Errorf("parseRequestBody() returned body = %q, want %q", string(actualBody), string(tt.expectedBody))
+			}
+
+			if tt.expectedError != "" {
+				if actualError == nil {
+					t.Errorf("parseRequestBody() expected error = %q, got nil", tt.expectedError)
+				} else if actualError.Error() != tt.expectedError {
+					t.Errorf("parseRequestBody() error = %q, want %q", actualError.Error(), tt.expectedError)
+				}
+			} else if actualError != nil {
+				t.Errorf("parseRequestBody() returned unexpected error: %v", actualError)
+			}
+
+			// Verify that the request body can be read again
+			if tt.requestBody != nil {
+				bodyBytes, errReadAgain := io.ReadAll(req.Body)
+				if errReadAgain != nil {
+					t.Errorf("error reading request body again: %v", errReadAgain)
+				}
+				if !bytes.Equal(bodyBytes, tt.expectedBody) {
+					t.Errorf("re-read request body = %q, want %q", string(bodyBytes), string(tt.expectedBody))
+				}
+			}
+		})
+	}
+}
+
+// errorReader is a custom Reader that always returns an error
+type errorReader struct{}
+
+func (er *errorReader) Read(_ []byte) (n int, err error) {
+	return 0, fmt.Errorf("test error")
+}
+
+func (er *errorReader) Close() error {
+	return nil
 }
