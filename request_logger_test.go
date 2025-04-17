@@ -17,22 +17,25 @@ type mockHandler struct {
 	body   string
 }
 
-func (m *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (m *mockHandler) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(m.status)
-	w.Write([]byte(m.body))
+	_, err := w.Write([]byte(m.body))
+	if err != nil {
+		slog.Error("failed to write to the request body", "reason", err)
+	}
 }
 
 // logCapture implements slog.Handler to capture log entries for assertions.
 type logCapture struct {
-	entries []map[string]interface{}
+	entries []map[string]any
 }
 
-func (l *logCapture) Enabled(ctx context.Context, level slog.Level) bool {
+func (l *logCapture) Enabled(_ context.Context, _ slog.Level) bool {
 	return true
 }
 
-func (l *logCapture) Handle(ctx context.Context, r slog.Record) error {
-	entry := make(map[string]interface{})
+func (l *logCapture) Handle(_ context.Context, r slog.Record) error {
+	entry := make(map[string]any)
 	r.Attrs(func(a slog.Attr) bool {
 		entry[a.Key] = a.Value.Any()
 		return true
@@ -41,26 +44,28 @@ func (l *logCapture) Handle(ctx context.Context, r slog.Record) error {
 	return nil
 }
 
-func (l *logCapture) WithAttrs(attrs []slog.Attr) slog.Handler {
+func (l *logCapture) WithAttrs(_ []slog.Attr) slog.Handler {
 	return l
 }
 
-func (l *logCapture) WithGroup(name string) slog.Handler {
+func (l *logCapture) WithGroup(_ string) slog.Handler {
 	return l
+}
+
+type testcase struct {
+	name           string
+	method         string
+	path           string
+	body           string
+	headers        map[string]string
+	handlerStatus  int
+	parseBodyError bool
+	userAgent      string
+	remoteAddr     string
 }
 
 func TestLogRequest(t *testing.T) {
-	testCases := []struct {
-		name           string
-		method         string
-		path           string
-		body           string
-		headers        map[string]string
-		handlerStatus  int
-		parseBodyError bool
-		userAgent      string
-		remoteAddr     string
-	}{
+	testCases := []testcase{
 		{
 			name:          "GET with 200 OK",
 			method:        http.MethodGet,
@@ -111,104 +116,114 @@ func TestLogRequest(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Setup log capture
-			lc := &logCapture{}
-			logger := slog.New(lc)
-			// Replace package-level slog default logger with our test logger temporarily
-			oldLogger := slog.Default()
-			slog.SetDefault(logger)
-			defer slog.SetDefault(oldLogger)
-
-			// Setup mock handler
-			handler := &mockHandler{
-				status: tc.handlerStatus,
-				body:   "response body",
-			}
-
-			// Create request with body and headers
-			req := httptest.NewRequest(tc.method, tc.path, strings.NewReader(tc.body))
-			for k, v := range tc.headers {
-				req.Header.Set(k, v)
-			}
-			req.Header.Set("User-Agent", tc.userAgent)
-			req.RemoteAddr = tc.remoteAddr
-
-			// Create response recorder
-			rr := httptest.NewRecorder()
-
-			// Wrap handler with middleware
-			middleware := goexpress.LogRequest(handler)
-
-			// Call middleware
-			middleware.ServeHTTP(rr, req)
-
-			// Check response status code
-			if rr.Code != tc.handlerStatus {
-				t.Errorf("Expected status %d, got %d", tc.handlerStatus, rr.Code)
-			}
-
-			// Check logs captured
-			if len(lc.entries) == 0 {
-				t.Fatal("No log entries captured")
-			}
-			logEntry := lc.entries[len(lc.entries)-1]
-
-			// Validate common log fields
-			if got := logEntry["method"]; got != tc.method {
-				t.Errorf("Logged method = %v; want %v", got, tc.method)
-			}
-			if got := logEntry["path"]; got != tc.path {
-				t.Errorf("Logged path = %v; want %v", got, tc.path)
-			}
-
-			loggedStatus, ok := logEntry["status_code"].(int)
-			if !ok {
-				// Try int64, which is common for structured loggers
-				if v, ok64 := logEntry["status_code"].(int64); ok64 {
-					loggedStatus = int(v)
-				} else {
-					t.Fatalf("status_code is not int or int64, got %T", logEntry["status_code"])
-				}
-			}
-			if loggedStatus != tc.handlerStatus {
-				t.Errorf("Logged status_code = %v; want %v", loggedStatus, tc.handlerStatus)
-			}
-			if got := logEntry["user_agent"]; got != tc.userAgent {
-				t.Errorf("Logged user_agent = %v; want %v", got, tc.userAgent)
-			}
-			if got := logEntry["remote_address"]; got != tc.remoteAddr {
-				t.Errorf("Logged remote_address = %v; want %v", got, tc.remoteAddr)
-			}
-
-			// Validate headers logged
-			headers, ok := logEntry["headers"].(http.Header)
-			if !ok {
-				t.Errorf("Logged headers missing or wrong type")
-			} else {
-				for k, v := range tc.headers {
-					if hv := headers.Get(k); hv != v {
-						t.Errorf("Header %s logged = %v; want %v", k, hv, v)
-					}
-				}
-			}
-
-			// Validate body
-			bodyLogged, _ := logEntry["body"].(string)
-
-			if !tc.parseBodyError {
-				if bodyLogged != tc.body {
-					t.Errorf("Logged body = %q; want %q", bodyLogged, tc.body)
-				}
-			}
-
-			// Validate duration is present and non-zero
-			duration, ok := logEntry["duration"].(time.Duration)
-			if !ok {
-				t.Error("Logged duration missing or wrong type")
-			} else if duration <= 0 {
-				t.Error("Logged duration should be positive")
-			}
-		})
+		runTestCase(t, tc)
 	}
+}
+
+func setupLogCapture() *logCapture {
+	// Setup log capture
+	lc := &logCapture{}
+	logger := slog.New(lc)
+	// Replace package-level slog default logger with our test logger temporarily
+	oldLogger := slog.Default()
+	slog.SetDefault(logger)
+	defer slog.SetDefault(oldLogger)
+
+	return lc
+}
+
+func runTestCase(t *testing.T, tc testcase) {
+	t.Helper()
+	t.Run(tc.name, func(t *testing.T) {
+		lc := setupLogCapture()
+		// Setup mock handler
+		handler := &mockHandler{
+			status: tc.handlerStatus,
+			body:   "response body",
+		}
+
+		// Create request with body and headers
+		req := httptest.NewRequest(tc.method, tc.path, strings.NewReader(tc.body))
+		for k, v := range tc.headers {
+			req.Header.Set(k, v)
+		}
+		req.Header.Set("User-Agent", tc.userAgent)
+		req.RemoteAddr = tc.remoteAddr
+
+		// Create response recorder
+		rr := httptest.NewRecorder()
+
+		// Wrap handler with middleware
+		middleware := goexpress.LogRequest(handler)
+
+		// Call middleware
+		middleware.ServeHTTP(rr, req)
+
+		// Check response status code
+		if rr.Code != tc.handlerStatus {
+			t.Errorf("Expected status %d, got %d", tc.handlerStatus, rr.Code)
+		}
+
+		// Check logs captured
+		if len(lc.entries) == 0 {
+			t.Fatal("No log entries captured")
+		}
+		logEntry := lc.entries[len(lc.entries)-1]
+
+		// Validate common log fields
+		if got := logEntry["method"]; got != tc.method {
+			t.Errorf("Logged method = %v; want %v", got, tc.method)
+		}
+		if got := logEntry["path"]; got != tc.path {
+			t.Errorf("Logged path = %v; want %v", got, tc.path)
+		}
+
+		loggedStatus, ok := logEntry["status_code"].(int)
+		if !ok {
+			// Try int64, which is common for structured loggers
+			if v, ok64 := logEntry["status_code"].(int64); ok64 {
+				loggedStatus = int(v)
+			} else {
+				t.Fatalf("status_code is not int or int64, got %T", logEntry["status_code"])
+			}
+		}
+		if loggedStatus != tc.handlerStatus {
+			t.Errorf("Logged status_code = %v; want %v", loggedStatus, tc.handlerStatus)
+		}
+		if got := logEntry["user_agent"]; got != tc.userAgent {
+			t.Errorf("Logged user_agent = %v; want %v", got, tc.userAgent)
+		}
+		if got := logEntry["remote_address"]; got != tc.remoteAddr {
+			t.Errorf("Logged remote_address = %v; want %v", got, tc.remoteAddr)
+		}
+
+		// Validate headers logged
+		headers, ok := logEntry["headers"].(http.Header)
+		if !ok {
+			t.Errorf("Logged headers missing or wrong type")
+		} else {
+			for k, v := range tc.headers {
+				if hv := headers.Get(k); hv != v {
+					t.Errorf("Header %s logged = %v; want %v", k, hv, v)
+				}
+			}
+		}
+
+		// Validate body
+		bodyLogged, _ := logEntry["body"].(string)
+
+		if !tc.parseBodyError {
+			if bodyLogged != tc.body {
+				t.Errorf("Logged body = %q; want %q", bodyLogged, tc.body)
+			}
+		}
+
+		// Validate duration is present and non-zero
+		duration, ok := logEntry["duration"].(time.Duration)
+		if !ok {
+			t.Error("Logged duration missing or wrong type")
+		} else if duration <= 0 {
+			t.Error("Logged duration should be positive")
+		}
+	})
 }
