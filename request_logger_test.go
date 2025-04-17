@@ -120,22 +120,17 @@ func TestLogRequest(t *testing.T) {
 	}
 }
 
-func setupLogCapture() *logCapture {
-	// Setup log capture
-	lc := &logCapture{}
-	logger := slog.New(lc)
-	// Replace package-level slog default logger with our test logger temporarily
-	oldLogger := slog.Default()
-	slog.SetDefault(logger)
-	defer slog.SetDefault(oldLogger)
-
-	return lc
-}
-
 func runTestCase(t *testing.T, tc testcase) {
 	t.Helper()
 	t.Run(tc.name, func(t *testing.T) {
-		lc := setupLogCapture()
+		// Setup log capture
+		lc := &logCapture{}
+		logger := slog.New(lc)
+		// Replace package-level slog default logger with our test logger temporarily
+		oldLogger := slog.Default()
+		slog.SetDefault(logger)
+		defer slog.SetDefault(oldLogger)
+
 		// Setup mock handler
 		handler := &mockHandler{
 			status: tc.handlerStatus,
