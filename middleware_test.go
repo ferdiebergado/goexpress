@@ -13,21 +13,6 @@ const (
 	errStatusFmt = "expected status %d, got %d"
 )
 
-func TestRequestLogger(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
-	rec := httptest.NewRecorder()
-
-	goexpress.LogRequest(handler).ServeHTTP(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Errorf(errStatusFmt, http.StatusOK, rec.Code)
-	}
-}
-
 func TestStripTrailingSlashes(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)

@@ -1,9 +1,10 @@
 package goexpress
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"log/slog"
-	"net"
 	"net/http"
 	"runtime/debug"
 	"strings"
@@ -48,10 +49,23 @@ func LogRequest(next http.Handler) http.Handler {
 
 		next.ServeHTTP(sw, r)
 
+		body, err := parseRequestBody(r)
+		if err != nil {
+			slog.Error("failed to parse the request body", "reason", err)
+		}
+
 		duration := time.Since(start)
-		slog.Info("New Request", "user_agent", r.UserAgent(), "remote_address", getIPAddress(r),
-			"method", r.Method, "path", r.URL.Path, "proto", r.Proto,
-			slog.Int("status_code", sw.statusCode), slog.Duration("duration", duration))
+		slog.Info("New Request",
+			"user_agent", r.UserAgent(),
+			"remote_address", getIPAddress(r),
+			"method", r.Method,
+			"path", r.URL.Path,
+			"proto", r.Proto,
+			slog.Any("headers", r.Header),
+			"body", string(body),
+			slog.Int("status_code", sw.statusCode),
+			slog.Duration("duration", duration),
+		)
 	})
 }
 
@@ -104,9 +118,23 @@ func getIPAddress(r *http.Request) string {
 		}
 	}
 
-	ip, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
+	// ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	// if err != nil {
+	// 	return r.RemoteAddr
+	// }
+	return r.RemoteAddr
+}
+
+func parseRequestBody(req *http.Request) ([]byte, error) {
+	var body []byte
+	if req.Body != nil {
+		bodyBytes, err := io.ReadAll(req.Body)
+		if err != nil {
+			return body, fmt.Errorf("error reading request body: %w", err)
+		}
+		req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+		body = bodyBytes
 	}
-	return ip
+
+	return body, nil
 }
