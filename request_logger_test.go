@@ -276,7 +276,7 @@ func TestParseRequestBody(t *testing.T) {
 				req.Header.Set("Content-Type", tt.contentType)
 			}
 
-			actualBody, actualError := goexpress.ParseRequestBody(req)
+			actualBody, actualError := goexpress.ReadRequestBody(req)
 
 			if !bytes.Equal(actualBody, tt.expectedBody) {
 				t.Errorf("parseRequestBody() returned body = %q, want %q", string(actualBody), string(tt.expectedBody))

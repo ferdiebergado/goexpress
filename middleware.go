@@ -47,12 +47,12 @@ func LogRequest(next http.Handler) http.Handler {
 		start := time.Now()
 		sw := &statusWriter{ResponseWriter: w, statusCode: http.StatusOK}
 
-		next.ServeHTTP(sw, r)
-
-		body, err := ParseRequestBody(r)
+		body, err := ReadRequestBody(r)
 		if err != nil {
-			slog.Error("failed to parse the request body", "reason", err)
+			slog.Error("failed to read the request body", "reason", err)
 		}
+
+		next.ServeHTTP(sw, r)
 
 		duration := time.Since(start)
 		slog.Info("New Request",
@@ -124,7 +124,7 @@ func getIPAddress(r *http.Request) string {
 	return r.RemoteAddr
 }
 
-func ParseRequestBody(req *http.Request) ([]byte, error) {
+func ReadRequestBody(req *http.Request) ([]byte, error) {
 	var body []byte
 	if req.Body != nil {
 		bodyBytes, err := io.ReadAll(req.Body)
