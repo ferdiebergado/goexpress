@@ -3,11 +3,13 @@ package goexpress_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -111,7 +113,7 @@ func TestLogRequest(t *testing.T) {
 			handlerStatus: http.StatusOK,
 			headers: map[string]string{
 				"X-Test":       "true",
-				"Content-Type": "application/json",
+				"Content-Type": goexpress.MimeJSON,
 			},
 			userAgent:  "CustomAgent/2.0",
 			remoteAddr: "10.0.0.1:9999",
@@ -253,13 +255,13 @@ func TestParseRequestBody(t *testing.T) {
 		{
 			name:         "JSON body",
 			requestBody:  bytes.NewBufferString(`{"key": "value", "number": "123"}`),
-			contentType:  "application/json",
+			contentType:  goexpress.MimeJSON,
 			expectedBody: []byte(`{"key": "value", "number": "123"}`),
 		},
 		{
 			name:         "Empty JSON body",
 			requestBody:  bytes.NewBufferString(`{}`),
-			contentType:  "application/json",
+			contentType:  goexpress.MimeJSON,
 			expectedBody: []byte(`{}`),
 		},
 		{
@@ -292,7 +294,6 @@ func TestParseRequestBody(t *testing.T) {
 				t.Errorf("parseRequestBody() returned unexpected error: %v", actualError)
 			}
 
-			// Verify that the request body can be read again
 			if tt.requestBody != nil {
 				bodyBytes, errReadAgain := io.ReadAll(req.Body)
 				if errReadAgain != nil {
@@ -306,7 +307,6 @@ func TestParseRequestBody(t *testing.T) {
 	}
 }
 
-// errorReader is a custom Reader that always returns an error
 type errorReader struct{}
 
 func (er *errorReader) Read(_ []byte) (n int, err error) {
@@ -315,4 +315,105 @@ func (er *errorReader) Read(_ []byte) (n int, err error) {
 
 func (er *errorReader) Close() error {
 	return nil
+}
+
+func TestMask(t *testing.T) {
+	tests := []struct {
+		name         string
+		inputData    []byte
+		fieldsToMask []string
+		expectedData []byte
+	}{
+		{
+			name:         "empty data and fields",
+			inputData:    []byte("{}"),
+			fieldsToMask: []string{},
+			expectedData: []byte("{}"),
+		},
+		{
+			name:         "no fields to mask",
+			inputData:    []byte(`{"name": "John Doe", "age": 30}`),
+			fieldsToMask: []string{},
+			expectedData: []byte(`{"age":30,"name":"John Doe"}`),
+		},
+		{
+			name:         "single field to mask",
+			inputData:    []byte(`{"name": "John Doe", "age": 30}`),
+			fieldsToMask: []string{"name"},
+			expectedData: []byte(`{"age":30,"name":"*"}`),
+		},
+		{
+			name:         "multiple fields to mask",
+			inputData:    []byte(`{"name": "John Doe", "age": 30, "email": "john.doe@example.com"}`),
+			fieldsToMask: []string{"name", "email"},
+			expectedData: []byte(`{"age":30,"email":"*","name":"*"}`),
+		},
+		{
+			name:         "field to mask not present",
+			inputData:    []byte(`{"name": "John Doe", "age": 30}`),
+			fieldsToMask: []string{"address"},
+			expectedData: []byte(`{"age":30,"name":"John Doe"}`),
+		},
+		{
+			name:         "empty fields to mask slice",
+			inputData:    []byte(`{"name": "John Doe"}`),
+			fieldsToMask: []string{},
+			expectedData: []byte(`{"name":"John Doe"}`),
+		},
+		{
+			name:         "data with different data types",
+			inputData:    []byte(`{"name": "John Doe", "age": 30, "isMember": true}`),
+			fieldsToMask: []string{"age"},
+			expectedData: []byte(`{"age":"*","isMember":true,"name":"John Doe"}`),
+		},
+		{
+			name:         "nested fields - should not mask (only top level)",
+			inputData:    []byte(`{"user": {"name": "John Doe", "details": {"age": 30}}}`),
+			fieldsToMask: []string{"name", "age"},
+			expectedData: []byte(`{"user":{"details":{"age":30},"name":"John Doe"}}`),
+		},
+		{
+			name:         "array in data - should not mask array itself",
+			inputData:    []byte(`{"hobbies": ["reading", "hiking"], "name": "John Doe"}`),
+			fieldsToMask: []string{"hobbies"},
+			expectedData: []byte(`{"hobbies":"*","name":"John Doe"}`),
+		},
+		{
+			name:         "invalid JSON input",
+			inputData:    []byte(`{"name": "John Doe",}`),
+			fieldsToMask: []string{"name"},
+			expectedData: []byte(`{"name": "John Doe",}`),
+		},
+		{
+			name:         "empty JSON input",
+			inputData:    []byte(""),
+			fieldsToMask: []string{"name"},
+			expectedData: []byte(""),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actualData := goexpress.Mask(tt.inputData, tt.fieldsToMask)
+
+			var actualMap map[string]any
+			errActual := json.Unmarshal(actualData, &actualMap)
+
+			var expectedMap map[string]any
+			errExpected := json.Unmarshal(tt.expectedData, &expectedMap)
+
+			if errActual != nil || errExpected != nil {
+				if !reflect.DeepEqual(actualData, tt.expectedData) {
+					t.Errorf("Test Case: %s\nInput: %s\nFields to Mask: %v\nExpected (raw): %s\nActual (raw): %s\nUnmarshal Error (actual): %v\nUnmarshal Error (expected): %v",
+						tt.name, tt.inputData, tt.fieldsToMask, tt.expectedData, actualData, errActual, errExpected)
+				}
+				return
+			}
+
+			if !reflect.DeepEqual(actualMap, expectedMap) {
+				t.Errorf("Test Case: %s\nInput: %s\nFields to Mask: %v\nExpected: %s\nActual: %s",
+					tt.name, tt.inputData, tt.fieldsToMask, tt.expectedData, actualData)
+			}
+		})
+	}
 }

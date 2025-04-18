@@ -2,6 +2,7 @@ package goexpress
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -10,6 +11,8 @@ import (
 	"strings"
 	"time"
 )
+
+const MimeJSON = "application/json"
 
 // statusWriter is a wrapper around http.ResponseWriter that tracks the status code
 // written to the response. This is useful for logging or middleware that needs to
@@ -51,7 +54,7 @@ func LogRequest(next http.Handler) http.Handler {
 		if err != nil {
 			slog.Error("failed to read the request body", "reason", err)
 		}
-
+		maskedBody := Mask(body, []string{"email", "password", "password_confirmation"})
 		next.ServeHTTP(sw, r)
 
 		duration := time.Since(start)
@@ -62,7 +65,7 @@ func LogRequest(next http.Handler) http.Handler {
 			"path", r.URL.Path,
 			"proto", r.Proto,
 			slog.Any("headers", r.Header),
-			"body", string(body),
+			"body", string(maskedBody),
 			slog.Int("status_code", sw.statusCode),
 			slog.Duration("duration", duration),
 		)
@@ -137,4 +140,29 @@ func ReadRequestBody(req *http.Request) ([]byte, error) {
 	}
 
 	return body, nil
+}
+
+func Mask(data []byte, fieldsToMask []string) []byte {
+	var dataMap map[string]any
+	err := json.Unmarshal(data, &dataMap)
+	if err != nil {
+		slog.Error("failed to unmarshal input", "reason", err)
+		return data
+	}
+
+	for k := range dataMap {
+		for _, f := range fieldsToMask {
+			if k == f {
+				dataMap[k] = "*"
+			}
+		}
+	}
+
+	bytes, err := json.Marshal(dataMap)
+	if err != nil {
+		slog.Error("failed to marshal data", "reason", err)
+		return data
+	}
+
+	return bytes
 }
