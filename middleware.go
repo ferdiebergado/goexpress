@@ -50,11 +50,6 @@ func LogRequest(next http.Handler) http.Handler {
 		start := time.Now()
 		sw := &statusWriter{ResponseWriter: w, statusCode: http.StatusOK}
 
-		body, err := ReadRequestBody(r)
-		if err != nil {
-			slog.Error("failed to read the request body", "reason", err)
-		}
-		maskedBody := Mask(body, []string{"email", "password", "password_confirmation"})
 		next.ServeHTTP(sw, r)
 
 		duration := time.Since(start)
@@ -65,7 +60,6 @@ func LogRequest(next http.Handler) http.Handler {
 			"path", r.URL.Path,
 			"proto", r.Proto,
 			slog.Any("headers", r.Header),
-			"body", string(maskedBody),
 			slog.Int("status_code", sw.statusCode),
 			slog.Duration("duration", duration),
 		)
