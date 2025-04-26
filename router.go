@@ -21,7 +21,7 @@ type Router struct {
 func New() *Router {
 	return &Router{
 		mux:         http.NewServeMux(),
-		middlewares: make([]func(next http.Handler) http.Handler, 0),
+		middlewares: []func(next http.Handler) http.Handler{},
 	}
 }
 
