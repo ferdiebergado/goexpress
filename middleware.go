@@ -6,53 +6,18 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"runtime/debug"
 	"strings"
-	"time"
 )
 
 const MimeJSON = "application/json"
-
-// statusWriter is a wrapper around http.ResponseWriter that tracks the status code
-// written to the response. This is useful for logging or middleware that needs to
-// inspect the status code after a request is handled.
-type statusWriter struct {
-	http.ResponseWriter
-	statusCode    int
-	headerWritten bool
-}
-
-// WriteHeader sets the HTTP status code for the response and records it in the statusWriter.
-// This allows middleware to track which status code was written to the client.
-func (w *statusWriter) WriteHeader(statusCode int) {
-	if !w.headerWritten {
-		w.statusCode = statusCode
-		w.headerWritten = true
-	}
-
-	w.ResponseWriter.WriteHeader(statusCode)
-}
-
-// Override Write to implicitly call WriteHeader(200) if needed
-func (w *statusWriter) Write(b []byte) (int, error) {
-	if !w.headerWritten {
-		w.WriteHeader(http.StatusOK)
-	}
-
-	return w.ResponseWriter.Write(b)
-}
 
 // LogRequest logs each incoming HTTP request including the method, URL, protocol,
 // status code, status text, and duration of the request. It wraps the handler to log this information.
 func LogRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		sw := &statusWriter{ResponseWriter: w, statusCode: http.StatusOK}
-
-		next.ServeHTTP(sw, r)
-
-		duration := time.Since(start)
 		slog.Info("New Request",
 			"user_agent", r.UserAgent(),
 			"remote_address", getIPAddress(r),
@@ -60,9 +25,8 @@ func LogRequest(next http.Handler) http.Handler {
 			"path", r.URL.Path,
 			"proto", r.Proto,
 			slog.Any("headers", r.Header),
-			slog.Int("status_code", sw.statusCode),
-			slog.Duration("duration", duration),
 		)
+		next.ServeHTTP(w, r)
 	})
 }
 
@@ -114,11 +78,11 @@ func getIPAddress(r *http.Request) string {
 		}
 	}
 
-	// ip, _, err := net.SplitHostPort(r.RemoteAddr)
-	// if err != nil {
-	// 	return r.RemoteAddr
-	// }
-	return r.RemoteAddr
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return ip
 }
 
 func ReadRequestBody(req *http.Request) ([]byte, error) {
