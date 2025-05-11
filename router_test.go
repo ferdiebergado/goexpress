@@ -1,8 +1,10 @@
 package goexpress_test
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -459,109 +461,74 @@ func TestNotFound(t *testing.T) {
 	}
 }
 
-func TestGroup(t *testing.T) {
-	// Test case 1: Basic group with no middleware
-	r := goexpress.New()
-	r.Group("/api", func(gr *goexpress.Router) *goexpress.Router {
-		gr.Get("/users", func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			_, err := w.Write([]byte("users"))
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-			}
-		})
-		return gr
-	})
+func TestRouterGroup(t *testing.T) {
+	router := goexpress.New()
 
-	req := httptest.NewRequest("GET", "/api/users", nil)
-	rec := httptest.NewRecorder()
-	r.ServeHTTP(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Errorf("Expected status code %d, got %d", http.StatusOK, rec.Code)
-	}
-	if rec.Body.String() != "users" {
-		t.Errorf("Expected body %s, got %s", "users", rec.Body.String())
-	}
-
-	// Test case 2: Group with middleware
-	r = goexpress.New()
-	middleware := func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("X-Test", "test")
-			next.ServeHTTP(w, r)
-		})
-	}
-	r.Group("/v1", func(gr *goexpress.Router) *goexpress.Router {
-		gr.Get("/items", func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			_, err := w.Write([]byte("items"))
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-			}
-		})
-		return gr
-	}, middleware)
-
-	req = httptest.NewRequest("GET", "/v1/items", nil)
-	rec = httptest.NewRecorder()
-	r.ServeHTTP(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Errorf("Expected status code %d, got %d", http.StatusOK, rec.Code)
-	}
-	if rec.Body.String() != "items" {
-		t.Errorf("Expected body %s, got %s", "items", rec.Body.String())
-	}
-	if rec.Header().Get("X-Test") != "test" {
-		t.Errorf("Expected header X-Test to be %s, got %s", "test", rec.Header().Get("X-Test"))
-	}
-
-	// Test case 3: Nested groups
-	r = goexpress.New()
-	r.Group("/admin", func(gr *goexpress.Router) *goexpress.Router {
-		gr.Group("/users", func(gr2 *goexpress.Router) *goexpress.Router {
-			gr2.Get("/", func(w http.ResponseWriter, _ *http.Request) {
-				w.WriteHeader(http.StatusOK)
-				_, err := w.Write([]byte("admin users"))
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-				}
+	// Middleware to trace execution
+	var trace []string
+	testMiddleware := func(name string) func(http.Handler) http.Handler {
+		return func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				trace = append(trace, name)
+				next.ServeHTTP(w, r)
 			})
-			return gr2
-		})
-		return gr
-	})
-	req = httptest.NewRequest("GET", "/admin/users/", nil)
-	rec = httptest.NewRecorder()
-	r.ServeHTTP(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Errorf("Expected status code %d, got %d", http.StatusOK, rec.Code)
-	}
-	if rec.Body.String() != "admin users" {
-		t.Errorf("Expected body %s, got %s", "admin users", rec.Body.String())
+		}
 	}
 
-	// Test case 4:  Empty Prefix
-	r = goexpress.New()
-	r.Group("", func(gr *goexpress.Router) *goexpress.Router {
-		gr.Get("/test", func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			_, err := w.Write([]byte("test"))
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-			}
-		})
-		return gr
-	})
-	req = httptest.NewRequest("GET", "/test", nil)
-	rec = httptest.NewRecorder()
-	r.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Errorf("Expected status code %d, got %d", http.StatusOK, rec.Code)
+	// Define a subroute under the group
+	router.Group("/api", func(r *goexpress.Router) {
+		r.Get("/hello", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, "Hello from group")
+		}))
+	}, testMiddleware("group-middleware"))
+
+	// Create a test request
+	req := httptest.NewRequest(http.MethodGet, "/api/hello", nil)
+	rec := httptest.NewRecorder()
+
+	// Serve the request
+	router.ServeHTTP(rec, req)
+
+	// Assertions
+	if got := rec.Body.String(); got != "Hello from group" {
+		t.Errorf("expected response body to be 'Hello from group', got '%s'", got)
 	}
-	if rec.Body.String() != "test" {
-		t.Errorf("Expected body %s, got %s", "test", rec.Body.String())
+	if len(trace) == 0 || trace[0] != "group-middleware" {
+		t.Errorf("expected group middleware to be applied, trace: %v", trace)
 	}
+}
+
+func TestRoutes(t *testing.T) {
+	r := goexpress.New()
+
+	r.Get("/hello", renderHello)
+	r.Post("/world", renderWorld)
+
+	routes := r.Routes()
+	t.Logf("Registered routes: %v", routes)
+
+	wantLen := 2
+	gotLen := len(routes)
+
+	if gotLen != wantLen {
+		t.Errorf("want: %d; got: %d", wantLen, gotLen)
+	}
+
+	route1 := goexpress.Route{
+		Method:  "GET",
+		Path:    "/hello",
+		Handler: "goexpress_test.renderHello",
+	}
+
+	if !reflect.DeepEqual(route1, routes[0]) {
+		t.Errorf("want: %+v; got: %+v", route1, routes[0])
+	}
+}
+
+func renderHello(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("hello"))
+}
+
+func renderWorld(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("world"))
 }

@@ -1,6 +1,17 @@
 package goexpress
 
-import "net/http"
+import (
+	"net/http"
+	"reflect"
+	"runtime"
+	"strings"
+)
+
+// Route describes a registered route, including its HTTP method, path pattern,
+// and the name of the associated handler.
+type Route struct {
+	Method, Path, Handler string
+}
 
 // Router is a custom HTTP router built on top of http.ServeMux with support for global
 // and route-specific middleware. It allows easy route registration for common HTTP methods
@@ -8,6 +19,7 @@ import "net/http"
 type Router struct {
 	mux         *http.ServeMux                         // underlying HTTP request multiplexer
 	middlewares []func(next http.Handler) http.Handler // slice to store global middleware functions
+	routes      []Route
 }
 
 // New creates and returns a custom HTTP router that satisfies the Router interface with an initialized
@@ -21,7 +33,7 @@ type Router struct {
 func New() *Router {
 	return &Router{
 		mux:         http.NewServeMux(),
-		middlewares: []func(next http.Handler) http.Handler{},
+		middlewares: make([]func(next http.Handler) http.Handler, 0),
 	}
 }
 
@@ -84,6 +96,13 @@ func (r *Router) handleMethod(method, path string, handler http.HandlerFunc, mid
 	if path == "" {
 		path = "/"
 	}
+
+	route := Route{
+		Method:  method,
+		Path:    path,
+		Handler: handlerName(handler),
+	}
+	r.routes = append(r.routes, route)
 
 	pattern := method + " " + path
 	r.Handle(pattern, handler, middlewares...)
@@ -312,18 +331,39 @@ func (r *Router) NotFound(handler http.HandlerFunc) {
 //
 // Example:
 //
-//	r.Group("/api", func(r *Router) *Router {
+//	r.Group("/api", func(r *Router) {
 //	    r.Get("/users", usersHandler)
 //	    r.Get("/products", productsHandler)
-//	    return r
 //	}, authMiddleware)
 //
 // This will register routes:
 //
 //	/api/users
 //	/api/products
-func (r *Router) Group(prefix string, h func(*Router) *Router, m ...func(next http.Handler) http.Handler) {
-	router := h(New())
+func (r *Router) Group(prefix string, handlerFunc func(*Router), middlewares ...func(next http.Handler) http.Handler) {
+	handlerFunc(r)
 
-	r.Handle(prefix+"/", http.StripPrefix(prefix, router.mux), m...)
+	// Normalize prefix to remove trailing slash unless it's just "/"
+	prefix = strings.TrimSuffix(prefix, "/")
+	if prefix == "" {
+		prefix = "/"
+	}
+
+	r.Handle(prefix+"/", http.StripPrefix(prefix, r), middlewares...)
+}
+
+// Routes returns a slice of all routes currently registered with the router.
+func (r *Router) Routes() []Route {
+	return r.routes
+}
+
+// handlerName returns the name of the function that implements the given http.Handler.
+func handlerName(h http.Handler) string {
+	fullFuncName := runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
+	if handlerFunc, ok := h.(http.HandlerFunc); ok {
+		fullFuncName = runtime.FuncForPC(reflect.ValueOf(handlerFunc).Pointer()).Name()
+	}
+	const sep = "/"
+	parts := strings.Split(fullFuncName, sep)
+	return strings.Join(parts[2:], sep)
 }
