@@ -463,6 +463,7 @@ func TestNotFound(t *testing.T) {
 
 func TestRouterGroup(t *testing.T) {
 	router := goexpress.New()
+	router.Use(goexpress.LogRequest)
 
 	// Middleware to trace execution
 	var trace []string
@@ -477,9 +478,14 @@ func TestRouterGroup(t *testing.T) {
 
 	// Define a subroute under the group
 	router.Group("/api", func(r *goexpress.Router) {
-		r.Get("/hello", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.Get("/hello", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			fmt.Fprint(w, "Hello from group")
 		}))
+		r.Group("/users", func(r2 *goexpress.Router) {
+			r2.Get("/profile", func(w http.ResponseWriter, _ *http.Request) {
+				w.Write([]byte("hi from profile"))
+			})
+		})
 	}, testMiddleware("group-middleware"))
 
 	// Create a test request
@@ -494,6 +500,18 @@ func TestRouterGroup(t *testing.T) {
 		t.Errorf("expected response body to be 'Hello from group', got '%s'", got)
 	}
 	if len(trace) == 0 || trace[0] != "group-middleware" {
+		t.Errorf("expected group middleware to be applied, trace: %v", trace)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/api/users/profile", nil)
+	rec = httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	if got := rec.Body.String(); got != "hi from profile" {
+		t.Errorf("expected response body to be 'hi from profile', got '%s'", got)
+	}
+	if len(trace) != 2 || trace[1] != "group-middleware" {
 		t.Errorf("expected group middleware to be applied, trace: %v", trace)
 	}
 }

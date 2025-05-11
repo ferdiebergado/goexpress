@@ -341,15 +341,10 @@ func (r *Router) NotFound(handler http.HandlerFunc) {
 //	/api/users
 //	/api/products
 func (r *Router) Group(prefix string, handlerFunc func(*Router), middlewares ...func(next http.Handler) http.Handler) {
-	handlerFunc(r)
+	gr := New()
+	handlerFunc(gr)
 
-	// Normalize prefix to remove trailing slash unless it's just "/"
-	prefix = strings.TrimSuffix(prefix, "/")
-	if prefix == "" {
-		prefix = "/"
-	}
-
-	r.Handle(prefix+"/", http.StripPrefix(prefix, r), middlewares...)
+	r.Handle(prefix+"/", http.StripPrefix(prefix, gr.mux), middlewares...)
 }
 
 // Routes returns a slice of all routes currently registered with the router.
