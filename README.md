@@ -8,8 +8,7 @@ Simple, dependency-free, and Express-styled HTTP Router written in Go.
 
 - Simple and easy to use
 - Expressjs-style routing
-- Relies only on the Go standard library
-- Uses net/http ServeMux under the hood
+- Depends only on the Go standard library
 - Static files handling
 - Common middlewares available out of the box
 
@@ -53,8 +52,8 @@ import "github.com/ferdiebergado/goexpress"
 func main() {
 	router := goexpress.New()
 
-	router.Use(goexpress.RequestLogger)
 	router.Use(goexpress.PanicRecovery)
+	router.Use(goexpress.RequestLogger)
 }
 ```
 
@@ -111,14 +110,13 @@ Middlewares for the route group can also be specified as the last arguments.
 Nested route groups are also supported.
 
 ```go
-router.Group("/api", func(r *Router) *Router {
+router.Group("/api", func(r *Router) {
     r.Get("/users", listUsersHandler)
     r.Post("/users", createUserHandler, authorizeMiddleware)
     r.Get("/products", listProductsHandler)
-    r.Group("/shipments", func(shipmentRouter *Router) *Router {
+    r.Group("/shipments", func(shipmentRouter *Router) {
       shipmentRouter.Get("/status", statusHandler)
     })
-    return r
 }, authMiddleware)
 ```
 
@@ -180,10 +178,8 @@ Example:
 ```go
 func RequestLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
+		log.Printf("%s %s %s", r.Method, r.URL.Path, r.Proto)
 		next.ServeHTTP(w, r)
-		duration := time.Since(start)
-		log.Printf("%s %s %s %d", r.Method, r.URL.Path, r.Proto, duration)
 	})
 }
 ```
@@ -205,8 +201,8 @@ func main() {
 	router := goexpress.New()
 
 	// Register global middlewares.
-	router.Use(goexpress.RequestLogger)
 	router.Use(goexpress.PanicRecovery)
+	router.Use(goexpress.RequestLogger)
 
 	// Serve static files.
 	router.ServeStatic("assets")
@@ -216,14 +212,13 @@ func main() {
 	router.Post("/api/todos", CreateTodo, AuthMiddleware)
 	router.Put("/api/todos/{id}", UpdateTodo, AuthMiddleware)
 	router.Delete("/api/todos/{id}", DeleteTodo, AuthMiddleware)
-  router.Group("/api", func(r *Router) *Router {
+  router.Group("/api", func(r *Router) {
       r.Get("/users", listUsersHandler)
       r.Post("/users", createUserHandler, authorizeMiddleware)
       r.Get("/products", listProductsHandler)
-      r.Group("/shipments", func(shipmentRouter *Router) *Router {
+      r.Group("/shipments", func(shipmentRouter *Router) {
         shipmentRouter.Get("/status", statusHandler)
       })
-      return r
   }, authMiddleware)
 
   // Start an http server with the router.
