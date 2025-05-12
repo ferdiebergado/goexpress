@@ -1,6 +1,7 @@
 package goexpress
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
 	"runtime"
@@ -10,16 +11,31 @@ import (
 // Route describes a registered route, including its HTTP method, path pattern,
 // and the name of the associated handler.
 type Route struct {
-	Method, Path, Handler string
+	Method, Path string
+	Handler      http.HandlerFunc
+	Middlewares  []func(http.Handler) http.Handler
+}
+
+func newRoute(method, path string, handler http.HandlerFunc, mws []func(http.Handler) http.Handler) Route {
+	return Route{
+		Method:      method,
+		Path:        path,
+		Handler:     handler,
+		Middlewares: mws,
+	}
+}
+
+func (r Route) String() string {
+	return fmt.Sprintf("%s %s %s %s", r.Method, r.Path, handlerName(r.Handler), middlewareNames(r.Middlewares))
 }
 
 // Router is a custom HTTP router built on top of http.ServeMux with support for global
 // and route-specific middleware. It allows easy route registration for common HTTP methods
 // (GET, POST, PATCH, PUT, DELETE) and provides a flexible middleware chain for request handling.
 type Router struct {
-	mux         *http.ServeMux                         // underlying HTTP request multiplexer
-	middlewares []func(next http.Handler) http.Handler // slice to store global middleware functions
-	routes      []Route
+	mux         *http.ServeMux                    // underlying HTTP request multiplexer
+	routes      []Route                           // slice to store the registered routes
+	middlewares []func(http.Handler) http.Handler // slice to store global middleware functions
 }
 
 // New creates and returns a custom HTTP router that satisfies the Router interface with an initialized
@@ -32,8 +48,7 @@ type Router struct {
 //	http.ListenAndServe(":8080", router) // Start server with Router
 func New() *Router {
 	return &Router{
-		mux:         http.NewServeMux(),
-		middlewares: make([]func(next http.Handler) http.Handler, 0),
+		mux: http.NewServeMux(),
 	}
 }
 
@@ -53,7 +68,7 @@ func (r *Router) Use(mw func(next http.Handler) http.Handler) {
 
 // wrap applies a series of middlewares to an http.Handler in reverse order,
 // so that the first middleware is the outermost wrapper around the handler.
-func (r *Router) wrap(handler http.Handler, middlewares []func(next http.Handler) http.Handler) http.Handler {
+func (r *Router) wrap(handler http.Handler, middlewares []func(http.Handler) http.Handler) http.Handler {
 	finalHandler := handler
 	for i := len(middlewares) - 1; i >= 0; i-- {
 		finalHandler = middlewares[i](finalHandler)
@@ -74,7 +89,7 @@ func (r *Router) wrap(handler http.Handler, middlewares []func(next http.Handler
 // Example:
 //
 //	router.Handle("GET /static", staticFileHandler, authMiddleware)
-func (r *Router) Handle(pattern string, handler http.Handler, middlewares ...func(next http.Handler) http.Handler) {
+func (r *Router) Handle(pattern string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) {
 	finalHandler := r.wrap(handler, middlewares)
 	r.mux.Handle(pattern, finalHandler)
 }
@@ -92,16 +107,12 @@ func (r *Router) Handle(pattern string, handler http.Handler, middlewares ...fun
 // Example:
 //
 //	router.handleMethod("GET", "/info", infoHandler)
-func (r *Router) handleMethod(method, path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
+func (r *Router) handleMethod(method, path string, handler http.HandlerFunc, middlewares ...func(http.Handler) http.Handler) {
 	if path == "" {
 		path = "/"
 	}
 
-	route := Route{
-		Method:  method,
-		Path:    path,
-		Handler: handlerName(handler),
-	}
+	route := newRoute(method, path, handler, middlewares)
 	r.routes = append(r.routes, route)
 
 	pattern := method + " " + path
@@ -340,16 +351,40 @@ func (r *Router) NotFound(handler http.HandlerFunc) {
 //
 //	/api/users
 //	/api/products
-func (r *Router) Group(prefix string, handlerFunc func(*Router), middlewares ...func(next http.Handler) http.Handler) {
+func (r *Router) Group(prefix string, handlerFunc func(router *Router), middlewares ...func(next http.Handler) http.Handler) {
 	gr := New()
 	handlerFunc(gr)
 
-	r.Handle(prefix+"/", http.StripPrefix(prefix, gr.mux), middlewares...)
+	const sep = "/"
+	path := prefix
+	if !strings.HasSuffix(path, sep) {
+		path += sep
+	}
+	prefix = strings.TrimSuffix(prefix, sep)
+
+	r.Handle(path, http.StripPrefix(prefix, gr), middlewares...)
+}
+
+// Mux returns the underlying http.Servemux.
+func (r *Router) Mux() *http.ServeMux {
+	return r.mux
 }
 
 // Routes returns a slice of all routes currently registered with the router.
 func (r *Router) Routes() []Route {
 	return r.routes
+}
+
+// Middlewares returns all the middlewares applied globally to the routes.
+func (r *Router) Middlewares() []func(http.Handler) http.Handler {
+	return r.middlewares
+}
+
+// SubRouter returns a new router based on the current router.
+func (r *Router) SubRouter() *Router {
+	return &Router{
+		mux: r.mux,
+	}
 }
 
 // handlerName returns the name of the function that implements the given http.Handler.
@@ -358,7 +393,26 @@ func handlerName(h http.Handler) string {
 	if handlerFunc, ok := h.(http.HandlerFunc); ok {
 		fullFuncName = runtime.FuncForPC(reflect.ValueOf(handlerFunc).Pointer()).Name()
 	}
+	return trimRepoName(fullFuncName)
+}
+
+func trimRepoName(fn string) string {
 	const sep = "/"
-	parts := strings.Split(fullFuncName, sep)
-	return strings.Join(parts[2:], sep)
+	parts := strings.Split(fn, sep)
+	r := parts
+	if len(parts) > 2 {
+		r = parts[2:]
+	}
+	name := strings.Join(r, sep)
+	return strings.TrimSpace(name)
+}
+
+func middlewareNames(mws []func(http.Handler) http.Handler) []string {
+	sl := make([]string, len(mws))
+	for _, mw := range mws {
+		fullFuncName := runtime.FuncForPC(reflect.ValueOf(mw).Pointer()).Name()
+		name := trimRepoName(fullFuncName)
+		sl = append(sl, name)
+	}
+	return sl
 }

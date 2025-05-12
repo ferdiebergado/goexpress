@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -477,7 +476,7 @@ func TestRouterGroup(t *testing.T) {
 	}
 
 	// Define a subroute under the group
-	router.Group("/api", func(r *goexpress.Router) {
+	router.Group("/api/", func(r *goexpress.Router) {
 		r.Get("/hello", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			fmt.Fprint(w, "Hello from group")
 		}))
@@ -518,10 +517,12 @@ func TestRouterGroup(t *testing.T) {
 
 func TestRoutes(t *testing.T) {
 	r := goexpress.New()
+	r.Use(goexpress.LogRequest)
 
-	r.Get("/hello", renderHello)
+	r.Get("/hello", renderHello, goexpress.LogRequest)
 	r.Post("/world", renderWorld)
 
+	t.Logf("Middlewares: %v", r.Middlewares())
 	routes := r.Routes()
 	t.Logf("Registered routes: %v", routes)
 
@@ -532,14 +533,23 @@ func TestRoutes(t *testing.T) {
 		t.Errorf("want: %d; got: %d", wantLen, gotLen)
 	}
 
-	route1 := goexpress.Route{
+	wantRoute := goexpress.Route{
 		Method:  "GET",
 		Path:    "/hello",
-		Handler: "goexpress_test.renderHello",
+		Handler: http.HandlerFunc(renderHello),
+	}
+	gotRoute := routes[0]
+
+	if wantRoute.Method != gotRoute.Method {
+		t.Errorf("want: %v; got: %v", wantRoute.Method, gotRoute.Method)
 	}
 
-	if !reflect.DeepEqual(route1, routes[0]) {
-		t.Errorf("want: %+v; got: %+v", route1, routes[0])
+	if wantRoute.Path != gotRoute.Path {
+		t.Errorf("want: %v; got: %v", wantRoute.Path, gotRoute.Path)
+	}
+
+	if gotRoute.Handler == nil {
+		t.Errorf("want: %v; got: %v", wantRoute.Handler, gotRoute.Handler)
 	}
 }
 
