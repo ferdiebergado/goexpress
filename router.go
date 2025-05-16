@@ -33,6 +33,7 @@ func (r Route) String() string {
 // and route-specific middleware. It allows easy route registration for common HTTP methods
 // (GET, POST, PATCH, PUT, DELETE) and provides a flexible middleware chain for request handling.
 type Router struct {
+	prefix      string
 	mux         *http.ServeMux                    // underlying HTTP request multiplexer
 	routes      []Route                           // slice to store the registered routes
 	middlewares []func(http.Handler) http.Handler // slice to store global middleware functions
@@ -76,21 +77,19 @@ func (r *Router) wrap(handler http.Handler, middlewares []func(http.Handler) htt
 	return finalHandler
 }
 
-// Handle registers a new route with a specific pattern and handler function, applying
-// optional route-specific middleware. The route-specific middleware will wrap around
-// the handler before the global middleware is applied.
+// Handle registers a new route with a specific pattern and handler function.
+// The global middlewares are applied to the route.
 //
 // Parameters:
 //
 //	pattern: URL pattern to match the route (e.g., "GET /path")
 //	handler: http.Handler for handling requests to this route
-//	middlewares: Optional route-specific middleware to apply before global middleware
 //
 // Example:
 //
-//	router.Handle("GET /static", staticFileHandler, authMiddleware)
-func (r *Router) Handle(pattern string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) {
-	finalHandler := r.wrap(handler, middlewares)
+//	router.Handle("GET /static", staticFileHandler)
+func (r *Router) Handle(pattern string, handler http.Handler) {
+	finalHandler := r.wrap(handler, r.middlewares)
 	r.mux.Handle(pattern, finalHandler)
 }
 
@@ -108,15 +107,13 @@ func (r *Router) Handle(pattern string, handler http.Handler, middlewares ...fun
 //
 //	router.handleMethod("GET", "/info", infoHandler)
 func (r *Router) handleMethod(method, path string, handler http.HandlerFunc, middlewares ...func(http.Handler) http.Handler) {
-	if path == "" {
-		path = "/"
-	}
-
-	route := newRoute(method, path, handler, middlewares)
+	fullPath := r.prefix + path
+	route := newRoute(method, fullPath, handler, middlewares)
 	r.routes = append(r.routes, route)
 
-	pattern := method + " " + path
-	r.Handle(pattern, handler, middlewares...)
+	pattern := method + " " + fullPath
+	finalHandler := r.wrap(handler, middlewares)
+	r.Handle(pattern, finalHandler)
 }
 
 // Get registers a new GET route for the specified path and handler, applying any optional middleware.
@@ -275,8 +272,7 @@ func (r *Router) Head(path string, handler http.HandlerFunc, middlewares ...func
 //
 //	http.ListenAndServe(":8080", router)
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	finalHandler := r.wrap(r.mux, r.middlewares)
-	finalHandler.ServeHTTP(w, req)
+	r.mux.ServeHTTP(w, req)
 }
 
 // ServeStatic serves static files from the specified local directory path.
@@ -322,14 +318,14 @@ func (r *Router) NotFound(handler http.HandlerFunc) {
 }
 
 // Group creates a new route group with a common prefix and applies the
-// given routerFunc to define sub-routes within that group.
+// given function to define sub-routes within that group.
 //
-// This method creates a new Router, passes it to the provided routerFunc
+// This method creates a new Router, passes it to the provided function
 // for route definition, and then registers the grouped routes under the
 // specified prefix. The routes within the group inherit the middlewares
 // of the parent Router.
 //
-// Routes can be specified just like with the normal router meaning middlewares can also be included.
+// Routes can be specified just like with the normal router.
 //
 // Middlewares for the route group can also be specified as the last arguments.
 //
@@ -338,7 +334,8 @@ func (r *Router) NotFound(handler http.HandlerFunc) {
 // Parameters:
 //   - prefix: The common URL path prefix for the route group. It should
 //     not have a trailing slash as it will be appended automatically.
-//   - h: A groupHandler that defines the routes within the group.
+//   - fn: A function that accepts a Router as an argument that defines the routes within the group.
+//   - middlewares: middlewares to be applied to the route group (optional)
 //
 // Example:
 //
@@ -351,18 +348,13 @@ func (r *Router) NotFound(handler http.HandlerFunc) {
 //
 //	/api/users
 //	/api/products
-func (r *Router) Group(prefix string, handlerFunc func(router *Router), middlewares ...func(next http.Handler) http.Handler) {
-	gr := New()
-	handlerFunc(gr)
+func (r *Router) Group(prefix string, fn func(router *Router), middlewares ...func(next http.Handler) http.Handler) {
+	sub := r.SubRouter(prefix)
+	sub.middlewares = append(sub.middlewares, middlewares...)
 
-	const sep = "/"
-	path := prefix
-	if !strings.HasSuffix(path, sep) {
-		path += sep
-	}
-	prefix = strings.TrimSuffix(prefix, sep)
+	fn(sub)
 
-	r.Handle(path, http.StripPrefix(prefix, gr), middlewares...)
+	r.routes = append(r.routes, sub.routes...)
 }
 
 // Mux returns the underlying http.Servemux.
@@ -380,10 +372,12 @@ func (r *Router) Middlewares() []func(http.Handler) http.Handler {
 	return r.middlewares
 }
 
-// SubRouter returns a new router based on the current router.
-func (r *Router) SubRouter() *Router {
+// SubRouter returns a new router which inherits the prefix, mux and middlewares of the parent router.
+func (r *Router) SubRouter(prefix string) *Router {
 	return &Router{
-		mux: r.mux,
+		prefix:      r.prefix + prefix,
+		mux:         r.mux,
+		middlewares: r.middlewares,
 	}
 }
 

@@ -476,16 +476,9 @@ func TestRouterGroup(t *testing.T) {
 	}
 
 	// Define a subroute under the group
-	router.Group("/api/", func(r *goexpress.Router) {
-		r.Get("/hello", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			fmt.Fprint(w, "Hello from group")
-		}))
-		r.Group("/users", func(r2 *goexpress.Router) {
-			r2.Get("/profile", func(w http.ResponseWriter, _ *http.Request) {
-				w.Write([]byte("hi from profile"))
-			})
-		})
-	}, testMiddleware("group-middleware"))
+	router.Group("/api", setupGR, testMiddleware("group-middleware"))
+
+	t.Logf("routes: %v", router.Routes())
 
 	// Create a test request
 	req := httptest.NewRequest(http.MethodGet, "/api/hello", nil)
@@ -515,18 +508,30 @@ func TestRouterGroup(t *testing.T) {
 	}
 }
 
+func setupGR(r *goexpress.Router) {
+	r.Get("/hello", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(w, "Hello from group")
+	}))
+	r.Group("/users", func(r2 *goexpress.Router) {
+		r2.Get("/profile", func(w http.ResponseWriter, _ *http.Request) {
+			w.Write([]byte("hi from profile"))
+		})
+	})
+}
+
 func TestRoutes(t *testing.T) {
 	r := goexpress.New()
 	r.Use(goexpress.LogRequest)
 
 	r.Get("/hello", renderHello, goexpress.LogRequest)
 	r.Post("/world", renderWorld)
+	r.Group("/api", setupGR)
 
 	t.Logf("Middlewares: %v", r.Middlewares())
 	routes := r.Routes()
 	t.Logf("Registered routes: %v", routes)
 
-	wantLen := 2
+	wantLen := 4
 	gotLen := len(routes)
 
 	if gotLen != wantLen {
