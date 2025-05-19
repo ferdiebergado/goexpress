@@ -1,3 +1,4 @@
+// Package goexpress provides an http router implementation.
 package goexpress
 
 import (
@@ -9,10 +10,10 @@ import (
 )
 
 // Route describes a registered route, including its HTTP method, path pattern,
-// and the name of the associated handler.
+// the name of the associated handler and the applied middlewares.
 type Route struct {
-	Method, Path string
-	Handler      http.HandlerFunc
+	Method, Path string           // HTTP method and Path
+	Handler      http.HandlerFunc // handler
 	Middlewares  []func(http.Handler) http.Handler
 }
 
@@ -25,6 +26,7 @@ func newRoute(method, path string, handler http.HandlerFunc, mws []func(http.Han
 	}
 }
 
+// String returns a string representation of the registered route.
 func (r Route) String() string {
 	return fmt.Sprintf("%s %s %s %s", r.Method, r.Path, handlerName(r.Handler), middlewareNames(r.Middlewares))
 }
@@ -33,7 +35,7 @@ func (r Route) String() string {
 // and route-specific middleware. It allows easy route registration for common HTTP methods
 // (GET, POST, PATCH, PUT, DELETE) and provides a flexible middleware chain for request handling.
 type Router struct {
-	prefix      string
+	prefix      string                            // prefix for the paths of registered routes
 	mux         *http.ServeMux                    // underlying HTTP request multiplexer
 	routes      []Route                           // slice to store the registered routes
 	middlewares []func(http.Handler) http.Handler // slice to store global middleware functions
@@ -379,6 +381,38 @@ func (r *Router) SubRouter(prefix string) *Router {
 		mux:         r.mux,
 		middlewares: r.middlewares,
 	}
+}
+
+// String returns the middlewares and routes registered in the Router as a string.
+func (r *Router) String() string {
+	var s strings.Builder
+	s.Write([]byte("\nMiddlewares:\n"))
+	for _, m := range r.middlewares {
+		fullFuncName := runtime.FuncForPC(reflect.ValueOf(m).Pointer()).Name()
+		name := trimRepoName(fullFuncName)
+		s.Write([]byte(name + "\n"))
+	}
+
+	s.Write([]byte("\nRoutes:\n"))
+	for _, r := range r.routes {
+		s.Write([]byte(r.String() + "\n"))
+	}
+	return s.String()
+}
+
+// SetPrefix assigns a new prefix for the Router.
+func (r *Router) SetPrefix(prefix string) {
+	r.prefix = prefix
+}
+
+// SetMux assigns a new http.Servemux for the Router.
+func (r *Router) SetMux(mux *http.ServeMux) {
+	r.mux = mux
+}
+
+// SetMiddlewares assigns a new set of middlewares for the Router.
+func (r *Router) SetMiddlewares(mws []func(http.Handler) http.Handler) {
+	r.middlewares = mws
 }
 
 // handlerName returns the name of the function that implements the given http.Handler.

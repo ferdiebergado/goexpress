@@ -558,6 +558,26 @@ func TestRoutes(t *testing.T) {
 	}
 }
 
+func TestRouterString(t *testing.T) {
+	m := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Log("middleware")
+			next.ServeHTTP(w, r)
+		})
+	}
+
+	r := goexpress.New()
+	r.Use(goexpress.LogRequest)
+
+	r.Get("/hello", renderHello)
+	r.Post("/world", renderWorld, m)
+	r.Group("/users", func(router *goexpress.Router) {
+		router.Get("/edit", renderHello)
+	})
+
+	t.Logf("%s", r)
+}
+
 func renderHello(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("hello"))
 }
