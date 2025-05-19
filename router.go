@@ -109,7 +109,7 @@ func (r *Router) Handle(pattern string, handler http.Handler) {
 //
 //	router.handleMethod("GET", "/info", infoHandler)
 func (r *Router) handleMethod(method, path string, handler http.HandlerFunc, middlewares ...func(http.Handler) http.Handler) {
-	fullPath := r.prefix + path
+	fullPath := r.prefix + strings.TrimSuffix(path, "/")
 	route := newRoute(method, fullPath, handler, middlewares)
 	r.routes = append(r.routes, route)
 
