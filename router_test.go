@@ -537,7 +537,7 @@ func TestRoutes(t *testing.T) {
 	routes := r.Routes()
 	t.Logf("Registered routes: %v", routes)
 
-	wantLen := 4
+	wantLen := 5
 	gotLen := len(routes)
 
 	if gotLen != wantLen {
