@@ -17,15 +17,6 @@ type Route struct {
 	Middlewares  []func(http.Handler) http.Handler
 }
 
-func newRoute(method, path string, handler http.HandlerFunc, mws []func(http.Handler) http.Handler) Route {
-	return Route{
-		Method:      method,
-		Path:        path,
-		Handler:     handler,
-		Middlewares: mws,
-	}
-}
-
 // String returns a string representation of the registered route.
 func (r Route) String() string {
 	return fmt.Sprintf("%s %s %s %s", r.Method, r.Path, handlerName(r.Handler), middlewareNames(r.Middlewares))
@@ -110,7 +101,12 @@ func (r *Router) Handle(pattern string, handler http.Handler) {
 //	router.handleMethod("GET", "/info", infoHandler)
 func (r *Router) handleMethod(method, path string, handler http.HandlerFunc, middlewares ...func(http.Handler) http.Handler) {
 	fullPath := r.prefix + strings.TrimSuffix(path, "/")
-	route := newRoute(method, fullPath, handler, middlewares)
+	route := Route{
+		Method:      method,
+		Path:        fullPath,
+		Handler:     handler,
+		Middlewares: middlewares,
+	}
 	r.routes = append(r.routes, route)
 
 	pattern := method + " " + fullPath
