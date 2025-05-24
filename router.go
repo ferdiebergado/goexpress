@@ -101,6 +101,10 @@ func (r *Router) Handle(pattern string, handler http.Handler) {
 //	router.handleMethod("GET", "/info", infoHandler)
 func (r *Router) handleMethod(method, path string, handler http.HandlerFunc, middlewares ...func(http.Handler) http.Handler) {
 	fullPath := r.prefix + strings.TrimSuffix(path, "/")
+	if fullPath == "" {
+		fullPath = "/"
+	}
+
 	route := Route{
 		Method:      method,
 		Path:        fullPath,
