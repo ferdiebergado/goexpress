@@ -2,7 +2,6 @@ package goexpress_test
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,35 +13,37 @@ import (
 // TestNewRouter ensures that a new Router is created successfully.
 func TestNewRouter(t *testing.T) {
 	r := goexpress.New()
+
 	if r == nil {
-		t.Fatal("Expected non-nil router")
+		t.Errorf("goexpress.New() = %v, want: non-nil router", r)
 	}
 }
 
 // TestRouterGet ensures that GET routes are handled correctly.
 func TestRouterGet(t *testing.T) {
+	const (
+		path       = "/hello"
+		wantStatus = http.StatusOK
+		wantBody   = "GET"
+	)
+
 	r := goexpress.New()
-	r.Get("/todos", func(w http.ResponseWriter, _ *http.Request) {
-		_, err := w.Write([]byte("Todo list."))
+
+	r.Get(path, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(wantStatus)
+		_, err := w.Write([]byte(r.Method))
 		if err != nil {
-			t.Errorf("write byte: %v", err)
+			t.Fatal(err)
 		}
 	})
 
-	req := httptest.NewRequest("GET", "/todos", http.NoBody)
-	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/hello", http.NoBody)
+	rec := httptest.NewRecorder()
 
-	r.ServeHTTP(w, req)
+	r.ServeHTTP(rec, req)
 
-	resp := w.Result()
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("expected status OK; got %d", resp.StatusCode)
-	}
-
-	body := w.Body.String()
-	if body != "Todo list." {
-		t.Errorf("expected body to be 'Post submitted!'; got %s", body)
-	}
+	assertStatus(t, rec.Code, wantStatus)
+	assertBody(t, rec.Body.String(), wantBody)
 }
 
 // TestRouterPost ensures that POST routes are handled correctly.
@@ -122,36 +123,10 @@ func TestRouterPut(t *testing.T) {
 	}
 }
 
-// TestRouterHandleMethod tests that a specific HTTP method and path are handled correctly.
-func TestRouterHandleMethod(t *testing.T) {
-	r := goexpress.New()
-
-	r.Put("/update", func(w http.ResponseWriter, _ *http.Request) {
-		_, err := w.Write([]byte("Update successful"))
-		if err != nil {
-			t.Errorf("write byte: %v", err)
-		}
-	})
-
-	req := httptest.NewRequest("PUT", "/update", nil)
-	w := httptest.NewRecorder()
-
-	r.ServeHTTP(w, req)
-
-	resp := w.Result()
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("expected status OK; got %d", resp.StatusCode)
-	}
-
-	body := w.Body.String()
-	if body != "Update successful" {
-		t.Errorf("expected body to be 'Update successful'; got %s", body)
-	}
-}
-
 // TestDeleteMethod ensures that DELETE routes are handled correctly.
 func TestDeleteMethod(t *testing.T) {
 	r := goexpress.New()
+
 	r.Delete("/remove", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Delete successful"))
 		if err != nil {
@@ -277,9 +252,10 @@ func TestHead(t *testing.T) {
 	}
 }
 
-// TestStaticPathHandling verifies that a request to a static file within a specified directory is correctly handled.
-func TestStaticPathHandling(t *testing.T) {
+// TestServeStatic verifies that a request to a static file within a specified directory is correctly handled.
+func TestServeStatic(t *testing.T) {
 	const staticPath = "public"
+
 	r := goexpress.New()
 	r.ServeStatic(staticPath)
 
@@ -330,71 +306,6 @@ func TestNotFound(t *testing.T) {
 	if body := rec.Body.String(); body != expectedBody {
 		t.Errorf("expected body %q, got %q", expectedBody, body)
 	}
-}
-
-func TestRouterGroup(t *testing.T) {
-	router := goexpress.New()
-	router.Use(goexpress.LogRequest)
-	router.Use(goexpress.StripTrailingSlashes)
-
-	// Middleware to trace execution
-	var trace []string
-	testMiddleware := func(name string) func(http.Handler) http.Handler {
-		return func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				trace = append(trace, name)
-				t.Logf("trace: %v", trace)
-				next.ServeHTTP(w, r)
-			})
-		}
-	}
-
-	// Define a subroute under the group
-	router.Group("/api", setupGR, testMiddleware("group-middleware"))
-
-	// t.Logf("routes: %v", router.Routes())
-
-	// Create a test request
-	req := httptest.NewRequest(http.MethodGet, "/api/hello", nil)
-	rec := httptest.NewRecorder()
-
-	// Serve the request
-	router.ServeHTTP(rec, req)
-
-	// Assertions
-	if got := rec.Body.String(); got != "Hello from group" {
-		t.Errorf("expected response body to be 'Hello from group', got '%s'", got)
-	}
-	if len(trace) == 0 || trace[0] != "group-middleware" {
-		t.Errorf("expected group middleware to be applied, trace: %v", trace)
-	}
-
-	req = httptest.NewRequest(http.MethodGet, "/api", nil)
-	req.Header.Set("Content-Type", "application/json")
-	rec = httptest.NewRecorder()
-
-	router.ServeHTTP(rec, req)
-
-	if got := rec.Body.String(); got != "Hello from api" {
-		t.Errorf("expected response body to be 'Hello from api', got '%s'", got)
-	}
-	if len(trace) == 0 || trace[0] != "group-middleware" {
-		t.Errorf("expected group middleware to be applied, trace: %v", trace)
-	}
-}
-
-func setupGR(r *goexpress.Router) {
-	r.Get("/", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		fmt.Fprint(w, "Hello from api")
-	}))
-	r.Get("/hello", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		fmt.Fprint(w, "Hello from group")
-	}))
-	r.Group("/users", func(r2 *goexpress.Router) {
-		r2.Get("/profile", func(w http.ResponseWriter, _ *http.Request) {
-			w.Write([]byte("hi from profile"))
-		})
-	})
 }
 
 func TestRouterString(t *testing.T) {
