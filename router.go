@@ -61,50 +61,6 @@ func (r *Router) Use(mw func(next http.Handler) http.Handler) {
 	r.middlewares = append(r.middlewares, mw)
 }
 
-// wrap applies a series of middlewares to an http.Handler in reverse order,
-// so that the first middleware is the outermost wrapper around the handler.
-func (r *Router) wrap(handler http.Handler, middlewares []func(http.Handler) http.Handler) http.Handler {
-	finalHandler := handler
-	for i := len(middlewares) - 1; i >= 0; i-- {
-		finalHandler = middlewares[i](finalHandler)
-	}
-	return finalHandler
-}
-
-// route registers a route with a specified HTTP method and path, applying
-// any optional middlewares to the handler.
-//
-// Parameters:
-//
-//	method: HTTP method (e.g., "GET", "POST")
-//	path: URL path for the route
-//	handler: Handler function for the route
-//	middlewares: Optional middlewares to apply to this specific route
-//
-// Example:
-//
-//	router.route("GET", "/info", infoHandler)
-func (r *Router) route(method, path string, handler http.HandlerFunc, mws ...func(http.Handler) http.Handler) {
-	fullPath := r.prefix + strings.TrimSuffix(path, "/")
-	if fullPath == "" {
-		fullPath = "/"
-	}
-
-	route := Route{
-		Method:      method,
-		Path:        fullPath,
-		Handler:     handler,
-		Middlewares: mws,
-	}
-
-	r.routes = append(r.routes, route)
-
-	pattern := route.Method + " " + route.Path
-	routeHandler := r.wrap(route.Handler, route.Middlewares)
-	finalHandler := r.wrap(routeHandler, r.middlewares)
-	r.mux.Handle(pattern, finalHandler)
-}
-
 // Get registers a new GET route for the specified path and handler, applying any optional middleware.
 //
 // Parameters:
@@ -264,48 +220,6 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r.mux.ServeHTTP(w, req)
 }
 
-// ServeStatic serves static files from the specified local directory path.
-// It registers a GET route to handle requests for static files and serves them
-// relative to the provided path. The function applies an http.StripPrefix
-// to remove the specified path prefix from incoming requests, allowing
-// files to be directly accessed within the directory.
-//
-// Parameters:
-//
-//	path: The local directory path containing the static files to be served.
-//
-// Example:
-//
-//	r.ServeStatic("assets") // Serves files from the "assets" directory at "/assets/"
-//
-// This function constructs a GET route pattern using the specified path
-// and registers it to the router, enabling clients to access static resources.
-func (r *Router) ServeStatic(path string) {
-	fullPath := "/" + path + "/"
-	pattern := http.MethodGet + " " + fullPath
-	r.mux.Handle(pattern, http.StripPrefix(fullPath, http.FileServer(http.Dir(path))))
-}
-
-// NotFound sets a custom handler for requests that don't match any registered route.
-// When a request is made to an undefined route, this handler will be invoked,
-// allowing a custom "Not Found" page or response to be returned.
-//
-// Parameters:
-//   - handler: The http.HandlerFunc to handle "Not Found" responses.
-//
-// Example:
-//
-//	router := goexpress.New()
-//	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
-//	    http.Error(w, "Custom 404 - Page Not Found", http.StatusNotFound)
-//	})
-//
-// This will display "Custom 404 - Page Not Found" when a request is made to
-// an undefined route.
-func (r *Router) NotFound(handler http.HandlerFunc) {
-	r.mux.Handle("/", handler)
-}
-
 // Group creates a new route group with a common prefix and applies the
 // given function to define sub-routes within that group.
 //
@@ -349,6 +263,48 @@ func (r *Router) Group(prefix string, fn func(router *Router), middlewares ...fu
 	r.routes = append(r.routes, sub.routes...)
 }
 
+// ServeStatic serves static files from the specified local directory path.
+// It registers a GET route to handle requests for static files and serves them
+// relative to the provided path. The function applies an http.StripPrefix
+// to remove the specified path prefix from incoming requests, allowing
+// files to be directly accessed within the directory.
+//
+// Parameters:
+//
+//	path: The local directory path containing the static files to be served.
+//
+// Example:
+//
+//	r.ServeStatic("assets") // Serves files from the "assets" directory at "/assets/"
+//
+// This function constructs a GET route pattern using the specified path
+// and registers it to the router, enabling clients to access static resources.
+func (r *Router) ServeStatic(path string) {
+	fullPath := "/" + path + "/"
+	pattern := http.MethodGet + " " + fullPath
+	r.mux.Handle(pattern, http.StripPrefix(fullPath, http.FileServer(http.Dir(path))))
+}
+
+// NotFound sets a custom handler for requests that don't match any registered route.
+// When a request is made to an undefined route, this handler will be invoked,
+// allowing a custom "Not Found" page or response to be returned.
+//
+// Parameters:
+//   - handler: The http.HandlerFunc to handle "Not Found" responses.
+//
+// Example:
+//
+//	router := goexpress.New()
+//	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
+//	    http.Error(w, "Custom 404 - Page Not Found", http.StatusNotFound)
+//	})
+//
+// This will display "Custom 404 - Page Not Found" when a request is made to
+// an undefined route.
+func (r *Router) NotFound(handler http.HandlerFunc) {
+	r.mux.Handle("/", handler)
+}
+
 // String returns the middlewares and routes registered in the Router as a string.
 func (r *Router) String() string {
 	var s strings.Builder
@@ -364,6 +320,50 @@ func (r *Router) String() string {
 		s.Write([]byte(r.String() + "\n"))
 	}
 	return s.String()
+}
+
+// route registers a route with a specified HTTP method and path, applying
+// any optional middlewares to the handler.
+//
+// Parameters:
+//
+//	method: HTTP method (e.g., "GET", "POST")
+//	path: URL path for the route
+//	handler: Handler function for the route
+//	middlewares: Optional middlewares to apply to this specific route
+//
+// Example:
+//
+//	router.route("GET", "/info", infoHandler)
+func (r *Router) route(method, path string, handler http.HandlerFunc, mws ...func(http.Handler) http.Handler) {
+	fullPath := r.prefix + strings.TrimSuffix(path, "/")
+	if fullPath == "" {
+		fullPath = "/"
+	}
+
+	route := Route{
+		Method:      method,
+		Path:        fullPath,
+		Handler:     handler,
+		Middlewares: mws,
+	}
+
+	r.routes = append(r.routes, route)
+
+	pattern := route.Method + " " + route.Path
+	routeHandler := r.wrap(route.Handler, route.Middlewares)
+	finalHandler := r.wrap(routeHandler, r.middlewares)
+	r.mux.Handle(pattern, finalHandler)
+}
+
+// wrap applies a series of middlewares to an http.Handler in reverse order,
+// so that the first middleware is the outermost wrapper around the handler.
+func (r *Router) wrap(handler http.Handler, middlewares []func(http.Handler) http.Handler) http.Handler {
+	finalHandler := handler
+	for i := len(middlewares) - 1; i >= 0; i-- {
+		finalHandler = middlewares[i](finalHandler)
+	}
+	return finalHandler
 }
 
 // handlerName returns the name of the function that implements the given http.Handler.
