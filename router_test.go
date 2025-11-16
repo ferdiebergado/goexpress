@@ -425,7 +425,7 @@ func worldHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Write([]byte("world"))
 }
 
-func TestRouter_ServeHTTP(t *testing.T) {
+func TestRouter(t *testing.T) {
 	t.Parallel()
 
 	type ctxKey int
@@ -726,6 +726,38 @@ func TestRouter_Group(t *testing.T) {
 				})
 			},
 			wantStatus: http.StatusOK,
+			wantBody:   "hello",
+			wantHeader: "inner",
+		},
+		{
+			name:   "nested group with inner group and route middleware",
+			method: http.MethodGet,
+			path:   "/api/users/hello",
+			setup: func(router *goexpress.Router) {
+				grpMw := func(next http.Handler) http.Handler {
+					return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.Header().Set(header, "inner")
+						next.ServeHTTP(w, r)
+					})
+				}
+
+				mw := func(next http.Handler) http.Handler {
+					return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusUnauthorized)
+						next.ServeHTTP(w, r)
+					})
+				}
+
+				router.Group("/api", func(r *goexpress.Router) {
+					r.Group("/users", func(r2 *goexpress.Router) {
+						r2.Get("/hello", func(w http.ResponseWriter, _ *http.Request) {
+							w.WriteHeader(http.StatusOK)
+							w.Write([]byte("hello"))
+						}, mw)
+					}, grpMw)
+				})
+			},
+			wantStatus: http.StatusUnauthorized,
 			wantBody:   "hello",
 			wantHeader: "inner",
 		},
