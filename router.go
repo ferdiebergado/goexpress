@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"reflect"
 	"runtime"
+	"slices"
 	"strings"
 )
 
@@ -100,7 +101,8 @@ func (r *Router) route(method, path string, handler http.HandlerFunc, mws ...fun
 
 	pattern := route.Method + " " + route.Path
 	routeHandler := r.wrap(route.Handler, route.Middlewares)
-	r.mux.Handle(pattern, routeHandler)
+	finalHandler := r.wrap(routeHandler, r.middlewares)
+	r.mux.Handle(pattern, finalHandler)
 }
 
 // Get registers a new GET route for the specified path and handler, applying any optional middleware.
@@ -259,8 +261,7 @@ func (r *Router) Head(path string, handler http.HandlerFunc, middlewares ...func
 //
 //	http.ListenAndServe(":8080", router)
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	finalHandler := r.wrap(r.mux, r.middlewares)
-	finalHandler.ServeHTTP(w, req)
+	r.mux.ServeHTTP(w, req)
 }
 
 // ServeStatic serves static files from the specified local directory path.
@@ -336,40 +337,16 @@ func (r *Router) NotFound(handler http.HandlerFunc) {
 //
 //	/api/users
 //	/api/products
-func (r *Router) Group(prefix string, fn func(router *Router), middlewares ...func(next http.Handler) http.Handler) {
+func (r *Router) Group(prefix string, fn func(router *Router), middlewares ...func(http.Handler) http.Handler) {
 	sub := &Router{
 		mux:         r.mux,
-		prefix:      prefix,
-		middlewares: middlewares,
+		prefix:      r.prefix + prefix,
+		middlewares: slices.Concat(r.middlewares, middlewares),
 	}
 
 	fn(sub)
 
 	r.routes = append(r.routes, sub.routes...)
-}
-
-// Mux returns the underlying http.Servemux.
-func (r *Router) Mux() *http.ServeMux {
-	return r.mux
-}
-
-// Routes returns a slice of all routes currently registered with the router.
-func (r *Router) Routes() []Route {
-	return r.routes
-}
-
-// Middlewares returns all the middlewares applied globally to the routes.
-func (r *Router) Middlewares() []func(http.Handler) http.Handler {
-	return r.middlewares
-}
-
-// SubRouter returns a new router which inherits the prefix, mux and middlewares of the parent router.
-func (r *Router) SubRouter(prefix string) *Router {
-	return &Router{
-		prefix:      r.prefix + prefix,
-		mux:         r.mux,
-		middlewares: r.middlewares,
-	}
 }
 
 // String returns the middlewares and routes registered in the Router as a string.
@@ -387,21 +364,6 @@ func (r *Router) String() string {
 		s.Write([]byte(r.String() + "\n"))
 	}
 	return s.String()
-}
-
-// SetPrefix assigns a new prefix for the Router.
-func (r *Router) SetPrefix(prefix string) {
-	r.prefix = prefix
-}
-
-// SetMux assigns a new http.Servemux for the Router.
-func (r *Router) SetMux(mux *http.ServeMux) {
-	r.mux = mux
-}
-
-// SetMiddlewares assigns a new set of middlewares for the Router.
-func (r *Router) SetMiddlewares(mws []func(http.Handler) http.Handler) {
-	r.middlewares = mws
 }
 
 // handlerName returns the name of the function that implements the given http.Handler.
