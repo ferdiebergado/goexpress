@@ -70,7 +70,7 @@ func (r *Router) wrap(handler http.Handler, middlewares []func(http.Handler) htt
 	return finalHandler
 }
 
-// handleMethod registers a route with a specified HTTP method and path, applying
+// route registers a route with a specified HTTP method and path, applying
 // any optional middlewares to the handler.
 //
 // Parameters:
@@ -82,8 +82,8 @@ func (r *Router) wrap(handler http.Handler, middlewares []func(http.Handler) htt
 //
 // Example:
 //
-//	router.handleMethod("GET", "/info", infoHandler)
-func (r *Router) handleMethod(method, path string, handler http.HandlerFunc, mws ...func(http.Handler) http.Handler) {
+//	router.route("GET", "/info", infoHandler)
+func (r *Router) route(method, path string, handler http.HandlerFunc, mws ...func(http.Handler) http.Handler) {
 	fullPath := r.prefix + strings.TrimSuffix(path, "/")
 	if fullPath == "" {
 		fullPath = "/"
@@ -95,11 +95,12 @@ func (r *Router) handleMethod(method, path string, handler http.HandlerFunc, mws
 		Handler:     handler,
 		Middlewares: mws,
 	}
+
 	r.routes = append(r.routes, route)
 
-	pattern := method + " " + fullPath
-	finalHandler := r.wrap(handler, mws)
-	r.mux.Handle(pattern, finalHandler)
+	pattern := route.Method + " " + route.Path
+	routeHandler := r.wrap(route.Handler, route.Middlewares)
+	r.mux.Handle(pattern, routeHandler)
 }
 
 // Get registers a new GET route for the specified path and handler, applying any optional middleware.
@@ -114,7 +115,7 @@ func (r *Router) handleMethod(method, path string, handler http.HandlerFunc, mws
 //
 //	router.Get("/about", aboutHandler, authMiddleware)
 func (r *Router) Get(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.handleMethod(http.MethodGet, path, handler, middlewares...)
+	r.route(http.MethodGet, path, handler, middlewares...)
 }
 
 // Post registers a new POST route for the specified path and handler, applying any optional middleware.
@@ -129,7 +130,7 @@ func (r *Router) Get(path string, handler http.HandlerFunc, middlewares ...func(
 //
 //	router.Post("/submit", submitHandler, csrfMiddleware)
 func (r *Router) Post(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.handleMethod(http.MethodPost, path, handler, middlewares...)
+	r.route(http.MethodPost, path, handler, middlewares...)
 }
 
 // Patch registers a new PATCH route for the specified path and handler, applying any optional middleware.
@@ -144,7 +145,7 @@ func (r *Router) Post(path string, handler http.HandlerFunc, middlewares ...func
 //
 //	router.Patch("/update", updateHandler, authMiddleware)
 func (r *Router) Patch(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.handleMethod(http.MethodPatch, path, handler, middlewares...)
+	r.route(http.MethodPatch, path, handler, middlewares...)
 }
 
 // Put registers a new PUT route for the specified path and handler, applying any optional middleware.
@@ -159,7 +160,7 @@ func (r *Router) Patch(path string, handler http.HandlerFunc, middlewares ...fun
 //
 //	router.Put("/create", createHandler)
 func (r *Router) Put(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.handleMethod(http.MethodPut, path, handler, middlewares...)
+	r.route(http.MethodPut, path, handler, middlewares...)
 }
 
 // Delete registers a new DELETE route for the specified path and handler, applying any optional middleware.
@@ -174,7 +175,7 @@ func (r *Router) Put(path string, handler http.HandlerFunc, middlewares ...func(
 //
 //	router.Delete("/remove", removeHandler, authMiddleware)
 func (r *Router) Delete(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.handleMethod(http.MethodDelete, path, handler, middlewares...)
+	r.route(http.MethodDelete, path, handler, middlewares...)
 }
 
 // Connect registers a new route that responds to HTTP CONNECT requests for the specified path.
@@ -193,7 +194,7 @@ func (r *Router) Delete(path string, handler http.HandlerFunc, middlewares ...fu
 //	    // Handler implementation
 //	})
 func (r *Router) Connect(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.handleMethod(http.MethodConnect, path, handler, middlewares...)
+	r.route(http.MethodConnect, path, handler, middlewares...)
 }
 
 // Options registers a new route that responds to HTTP OPTIONS requests for the specified path.
@@ -211,7 +212,7 @@ func (r *Router) Connect(path string, handler http.HandlerFunc, middlewares ...f
 //	    // Handler implementation
 //	})
 func (r *Router) Options(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.handleMethod(http.MethodOptions, path, handler, middlewares...)
+	r.route(http.MethodOptions, path, handler, middlewares...)
 }
 
 // Trace registers a new route that responds to HTTP TRACE requests for the specified path.
@@ -229,7 +230,7 @@ func (r *Router) Options(path string, handler http.HandlerFunc, middlewares ...f
 //	    // Handler implementation
 //	})
 func (r *Router) Trace(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.handleMethod(http.MethodTrace, path, handler, middlewares...)
+	r.route(http.MethodTrace, path, handler, middlewares...)
 }
 
 // Head registers a new route that responds to HTTP HEAD requests for the specified path.
@@ -247,7 +248,7 @@ func (r *Router) Trace(path string, handler http.HandlerFunc, middlewares ...fun
 //	    // Handler implementation
 //	})
 func (r *Router) Head(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.handleMethod(http.MethodHead, path, handler, middlewares...)
+	r.route(http.MethodHead, path, handler, middlewares...)
 }
 
 // ServeHTTP enables the Router to satisfy the http.Handler interface.
@@ -336,8 +337,11 @@ func (r *Router) NotFound(handler http.HandlerFunc) {
 //	/api/users
 //	/api/products
 func (r *Router) Group(prefix string, fn func(router *Router), middlewares ...func(next http.Handler) http.Handler) {
-	sub := r.SubRouter(prefix)
-	sub.middlewares = append(sub.middlewares, middlewares...)
+	sub := &Router{
+		mux:         r.mux,
+		prefix:      prefix,
+		middlewares: middlewares,
+	}
 
 	fn(sub)
 
