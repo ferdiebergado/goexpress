@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"reflect"
 	"runtime"
-	"slices"
 	"strings"
 )
 
@@ -255,7 +254,7 @@ func (r *Router) Group(prefix string, fn func(router *Router), middlewares ...fu
 	sub := &Router{
 		mux:         r.mux,
 		prefix:      r.prefix + prefix,
-		middlewares: slices.Concat(r.middlewares, middlewares),
+		middlewares: append(r.middlewares, middlewares...),
 	}
 
 	fn(sub)
