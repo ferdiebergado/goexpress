@@ -263,7 +263,7 @@ func (r *Router) Group(prefix string, fn func(router *Router), middlewares ...fu
 	r.routes = append(r.routes, sub.routes...)
 }
 
-// ServeStatic serves static files from the specified local directory path.
+// Static serves static files from the specified local directory path.
 // It registers a GET route to handle requests for static files and serves them
 // relative to the provided path. The function applies an http.StripPrefix
 // to remove the specified path prefix from incoming requests, allowing
@@ -275,11 +275,11 @@ func (r *Router) Group(prefix string, fn func(router *Router), middlewares ...fu
 //
 // Example:
 //
-//	r.ServeStatic("assets") // Serves files from the "assets" directory at "/assets/"
+//	r.Static("assets") // Serves files from the "assets" directory at "/assets/"
 //
 // This function constructs a GET route pattern using the specified path
 // and registers it to the router, enabling clients to access static resources.
-func (r *Router) ServeStatic(path string) {
+func (r *Router) Static(path string) {
 	fullPath := "/" + path + "/"
 	pattern := http.MethodGet + " " + fullPath
 	r.mux.Handle(pattern, http.StripPrefix(fullPath, http.FileServer(http.Dir(path))))
