@@ -12,9 +12,9 @@ import (
 // Route describes a registered route, including its HTTP method, path pattern,
 // the name of the associated handler and the applied middlewares.
 type Route struct {
-	Method, Path string           // HTTP method and Path
-	Handler      http.HandlerFunc // handler
-	Middlewares  []func(http.Handler) http.Handler
+	Method, Path string                            // HTTP method and Path
+	Handler      http.HandlerFunc                  // handler
+	Middlewares  []func(http.Handler) http.Handler // route-specific middlewares
 }
 
 // String returns a string representation of the registered route.
@@ -386,11 +386,11 @@ func trimRepoName(fn string) string {
 }
 
 func middlewareNames(mws []func(http.Handler) http.Handler) []string {
-	sl := make([]string, len(mws))
+	names := make([]string, len(mws))
 	for _, mw := range mws {
 		fullFuncName := runtime.FuncForPC(reflect.ValueOf(mw).Pointer()).Name()
 		name := trimRepoName(fullFuncName)
-		sl = append(sl, name)
+		names = append(names, name)
 	}
-	return sl
+	return names
 }
