@@ -12,6 +12,8 @@ import (
 
 // TestNewRouter ensures that a new Router is created successfully.
 func TestNewRouter(t *testing.T) {
+	t.Parallel()
+
 	r := goexpress.New()
 
 	if r == nil {
@@ -131,6 +133,8 @@ func TestHTTPMethods(t *testing.T) {
 
 // TestServeStatic verifies that a request to a static file within a specified directory is correctly handled.
 func TestStatic(t *testing.T) {
+	t.Parallel()
+
 	const staticPath = "public"
 
 	r := goexpress.New()
@@ -155,14 +159,18 @@ func TestStatic(t *testing.T) {
 
 // TestNotFound verifies that the custom "Not Found" handler is called for undefined routes.
 func TestNotFound(t *testing.T) {
-	r := goexpress.New()
+	t.Parallel()
 
-	const wantStatus = http.StatusNotFound
+	const (
+		wantStatus = http.StatusNotFound
+		wantBody   = "Custom 404 - Page Not Found"
+	)
 
 	notFoundHandler := func(w http.ResponseWriter, _ *http.Request) {
-		http.Error(w, "Custom 404 - Page Not Found", wantStatus)
+		http.Error(w, wantBody, wantStatus)
 	}
 
+	r := goexpress.New()
 	r.NotFound(notFoundHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/undefined", http.NoBody)
@@ -170,7 +178,7 @@ func TestNotFound(t *testing.T) {
 	r.ServeHTTP(rec, req)
 
 	assertStatus(t, rec.Code, wantStatus)
-	assertBody(t, rec.Body.String(), "Custom 404 - Page Not Found")
+	assertBody(t, rec.Body.String(), wantBody)
 }
 
 func TestRouter(t *testing.T) {
@@ -291,7 +299,7 @@ func TestRouter(t *testing.T) {
 				tt.setup(router)
 			}
 
-			req := httptest.NewRequest(tt.method, tt.path, nil)
+			req := httptest.NewRequest(tt.method, tt.path, http.NoBody)
 			rec := httptest.NewRecorder()
 			router.ServeHTTP(rec, req)
 
