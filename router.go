@@ -367,11 +367,15 @@ func (r *Router) wrap(handler http.Handler, middlewares []func(http.Handler) htt
 
 // handlerName returns the name of the function that implements the given http.Handler.
 func handlerName(h http.Handler) string {
-	fullFuncName := runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
+	fullFuncName := funcName(h)
 	if handlerFunc, ok := h.(http.HandlerFunc); ok {
-		fullFuncName = runtime.FuncForPC(reflect.ValueOf(handlerFunc).Pointer()).Name()
+		fullFuncName = funcName(handlerFunc)
 	}
 	return trimRepoName(fullFuncName)
+}
+
+func funcName(f any) string {
+	return runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
 }
 
 func trimRepoName(fn string) string {
