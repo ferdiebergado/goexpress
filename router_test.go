@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -137,26 +138,84 @@ func TestHTTPMethods(t *testing.T) {
 func TestStatic(t *testing.T) {
 	t.Parallel()
 
-	const staticPath = "public"
+	const (
+		header     = "Content-Type"
+		wantHeader = "text/html"
+		wantBody   = "<h1>This is a test page</h1>"
+	)
 
-	r := goexpress.New()
-	r.Static(staticPath)
+	tests := []struct {
+		name       string
+		setup      func(*goexpress.Router) string
+		wantStatus int
+		wantHeader string
+		wantBody   string
+	}{
+		{
+			name: "absolute path",
+			setup: func(r *goexpress.Router) string {
+				tmpDir := t.TempDir()
+				path := tmpDir + "/test.html"
 
-	req := httptest.NewRequest(http.MethodGet, "/public/home.html", http.NoBody)
-	w := httptest.NewRecorder()
+				if err := os.WriteFile(path, []byte(wantBody), 0o600); err != nil {
+					t.Fatalf("failed to write html file: %v", err)
+				}
 
-	r.ServeHTTP(w, req)
+				r.Static(tmpDir)
 
-	resp := w.Result()
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("expected status OK; got %d", resp.StatusCode)
+				return path
+			},
+			wantStatus: http.StatusOK,
+			wantHeader: wantHeader,
+			wantBody:   wantBody,
+		},
+		{
+			name: "relative path",
+			setup: func(r *goexpress.Router) string {
+				r.Static("static")
+
+				return "/static/test.html"
+			},
+			wantStatus: http.StatusOK,
+			wantHeader: wantHeader,
+			wantBody:   wantBody,
+		},
+		{
+			name: "relative path with current directory prefix",
+			setup: func(r *goexpress.Router) string {
+				r.Static("./static")
+
+				return "/static/test.html"
+			},
+			wantStatus: http.StatusOK,
+			wantHeader: wantHeader,
+			wantBody:   wantBody,
+		},
 	}
 
-	contentType := resp.Header.Get("content-type")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	if strings.Split(contentType, ";")[0] != "text/html" {
-		t.Errorf("expected content-type text/html; got %s", resp.Header.Get("content-type"))
+			r := goexpress.New()
+
+			path := tt.setup(r)
+
+			req := httptest.NewRequest(http.MethodGet, path, http.NoBody)
+			rec := httptest.NewRecorder()
+			r.ServeHTTP(rec, req)
+
+			assertStatus(t, rec.Code, http.StatusOK)
+
+			contentType := rec.Header().Get(header)
+			if strings.Split(contentType, ";")[0] != wantHeader {
+				t.Errorf("rec.Header().Get(%q) = %q, want: %q", header, contentType, wantHeader)
+			}
+
+			assertBody(t, rec.Body.String(), wantBody)
+		})
 	}
+
 }
 
 // TestNotFound verifies that the custom "Not Found" handler is called for undefined routes.
