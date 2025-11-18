@@ -222,11 +222,6 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // Group creates a new route group with a common prefix and applies the
 // given function to define sub-routes within that group.
 //
-// This method creates a new Router, passes it to the provided function
-// for route definition, and then registers the grouped routes under the
-// specified prefix. The routes within the group inherit the middlewares
-// of the parent Router.
-//
 // Routes can be specified just like with the normal router.
 //
 // Middlewares for the route group can also be specified as the last arguments.
@@ -299,9 +294,10 @@ func (r *Router) Static(path string) {
 //	})
 //
 // This will display "Custom 404 - Page Not Found" when a request is made to
-// an undefined route.
+// an unregistered route.
 func (r *Router) NotFound(handler http.HandlerFunc) {
-	r.mux.Handle("/", handler)
+	finalHandler := r.wrap(handler, r.middlewares)
+	r.mux.Handle("/", finalHandler)
 }
 
 // String returns the middlewares and routes registered in the Router as a string.
