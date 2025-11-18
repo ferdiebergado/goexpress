@@ -24,8 +24,10 @@ func TestNewRouter(t *testing.T) {
 func TestHTTPMethods(t *testing.T) {
 	t.Parallel()
 
+	const wantStatus = http.StatusTeapot
+
 	helloHandler := func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusAccepted)
+		w.WriteHeader(wantStatus)
 		_, err := w.Write([]byte(r.Method))
 		if err != nil {
 			t.Fatal(err)
@@ -125,7 +127,7 @@ func TestHTTPMethods(t *testing.T) {
 
 			r.ServeHTTP(rec, req)
 
-			assertStatus(t, rec.Code, http.StatusAccepted)
+			assertStatus(t, rec.Code, wantStatus)
 			assertBody(t, rec.Body.String(), tt.wantBody)
 		})
 	}
