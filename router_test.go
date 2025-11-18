@@ -164,23 +164,34 @@ func TestNotFound(t *testing.T) {
 	t.Parallel()
 
 	const (
+		header     = "X-Middleware"
+		wantHeader = "global"
 		wantStatus = http.StatusNotFound
 		wantBody   = "Custom 404 - Page Not Found"
 	)
+
+	mw := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set(header, wantHeader)
+			next.ServeHTTP(w, r)
+		})
+	}
 
 	notFoundHandler := func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, wantBody, wantStatus)
 	}
 
 	r := goexpress.New()
+	r.Use(mw)
 	r.NotFound(notFoundHandler)
 
-	req := httptest.NewRequest(http.MethodGet, "/undefined", http.NoBody)
+	req := httptest.NewRequest(http.MethodGet, "/unknown", http.NoBody)
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, req)
 
 	assertStatus(t, rec.Code, wantStatus)
 	assertBody(t, rec.Body.String(), wantBody)
+	assertHeader(t, rec, header, wantHeader)
 }
 
 func TestRouter(t *testing.T) {
@@ -528,9 +539,7 @@ func TestGroup(t *testing.T) {
 
 			assertBody(t, rec.Body.String(), tt.wantBody)
 
-			if header := rec.Header().Get(header); header != tt.wantHeader {
-				t.Errorf("rec.Header().Get(%q) = %q, want: %q", header, rec.Header().Get(header), tt.wantHeader)
-			}
+			assertHeader(t, rec, header, tt.wantHeader)
 		})
 	}
 }
@@ -548,5 +557,14 @@ func assertBody(t *testing.T, body, wantBody string) {
 
 	if strings.TrimSpace(body) != wantBody {
 		t.Errorf("body = %q, want: %q", body, wantBody)
+	}
+}
+
+func assertHeader(t *testing.T, rec *httptest.ResponseRecorder, header, wantHeader string) {
+	t.Helper()
+
+	gotHeader := rec.Header().Get(header)
+	if gotHeader != wantHeader {
+		t.Errorf("rec.Header().Get(%q) = %q, want: %q", header, gotHeader, wantHeader)
 	}
 }
