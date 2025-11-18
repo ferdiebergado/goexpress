@@ -4,6 +4,7 @@ package goexpress
 import (
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"strings"
@@ -259,9 +260,7 @@ func (r *Router) Group(prefix string, fn func(router *Router), middlewares ...fu
 
 // Static serves static files from the specified local directory path.
 // It registers a GET route to handle requests for static files and serves them
-// relative to the provided path. The function applies an http.StripPrefix
-// to remove the specified path prefix from incoming requests, allowing
-// files to be directly accessed within the directory.
+// relative to the provided path.
 //
 // Parameters:
 //
@@ -274,9 +273,15 @@ func (r *Router) Group(prefix string, fn func(router *Router), middlewares ...fu
 // This function constructs a GET route pattern using the specified path
 // and registers it to the router, enabling clients to access static resources.
 func (r *Router) Static(path string) {
-	fullPath := "/" + path + "/"
-	pattern := http.MethodGet + " " + fullPath
-	r.mux.Handle(pattern, http.StripPrefix(fullPath, http.FileServer(http.Dir(path))))
+	var prefix string
+	if filepath.IsAbs(path) {
+		prefix = path
+	} else if filepath.IsLocal(path) {
+		prefix = "/" + filepath.Clean(path)
+	}
+
+	pattern := http.MethodGet + " " + prefix + "/"
+	r.mux.Handle(pattern, http.StripPrefix(prefix, http.FileServer(http.Dir(path))))
 }
 
 // NotFound sets a custom handler for requests that don't match any registered route.
