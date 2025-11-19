@@ -139,6 +139,7 @@ func TestStatic(t *testing.T) {
 	t.Parallel()
 
 	const (
+		staticFile = "/static/test.html"
 		header     = "Content-Type"
 		wantHeader = "text/html"
 		wantBody   = "<h1>This is a test page</h1>"
@@ -161,9 +162,9 @@ func TestStatic(t *testing.T) {
 					t.Fatalf("failed to write html file: %v", err)
 				}
 
-				r.Static(tmpDir)
+				r.Static("/static", tmpDir)
 
-				return path
+				return staticFile
 			},
 			wantStatus: http.StatusOK,
 			wantHeader: wantHeader,
@@ -172,9 +173,9 @@ func TestStatic(t *testing.T) {
 		{
 			name: "relative path",
 			setup: func(r *goexpress.Router) string {
-				r.Static("static")
+				r.Static("/static", "static")
 
-				return "/static/test.html"
+				return staticFile
 			},
 			wantStatus: http.StatusOK,
 			wantHeader: wantHeader,
@@ -183,9 +184,9 @@ func TestStatic(t *testing.T) {
 		{
 			name: "relative path with current directory prefix",
 			setup: func(r *goexpress.Router) string {
-				r.Static("./static")
+				r.Static("/static", "./static")
 
-				return "/static/test.html"
+				return staticFile
 			},
 			wantStatus: http.StatusOK,
 			wantHeader: wantHeader,
