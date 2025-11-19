@@ -4,7 +4,6 @@ package goexpress
 import (
 	"fmt"
 	"net/http"
-	"path/filepath"
 	"reflect"
 	"runtime"
 	"strings"
@@ -264,24 +263,25 @@ func (r *Router) Group(prefix string, fn func(router *Router), middlewares ...fu
 //
 // Parameters:
 //
+//	prefix: The request URL.
 //	path: The local directory path containing the static files to be served.
 //
 // Example:
 //
-//	r.Static("assets") // Serves files from the "assets" directory at "/assets/"
+//	r.Static("assets", "./assets") // Serves files from the "assets" directory at "/assets/"
 //
 // This function constructs a GET route pattern using the specified path
 // and registers it to the router, enabling clients to access static resources.
-func (r *Router) Static(path string) {
-	var prefix string
-	if filepath.IsAbs(path) {
-		prefix = path
-	} else if filepath.IsLocal(path) {
-		prefix = "/" + filepath.Clean(path)
+func (r *Router) Static(prefix, path string) {
+	handler := http.StripPrefix(prefix, http.FileServer(http.Dir(path)))
+	wrappedHandler := r.wrap(handler, r.middlewares)
+
+	pattern := prefix
+	if !strings.HasSuffix(pattern, "/") {
+		pattern += "/"
 	}
 
-	pattern := http.MethodGet + " " + prefix + "/"
-	r.mux.Handle(pattern, http.StripPrefix(prefix, http.FileServer(http.Dir(path))))
+	r.mux.Handle(pattern, wrappedHandler)
 }
 
 // NotFound sets a custom handler for requests that don't match any registered route.
