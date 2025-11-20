@@ -4,6 +4,7 @@ package goexpress
 import (
 	"fmt"
 	"net/http"
+	"path"
 	"reflect"
 	"runtime"
 	"strings"
@@ -323,11 +324,7 @@ func (r *Router) String() string {
 //
 //	router.handle("GET", "/info", infoHandler)
 func (r *Router) handle(method, path string, handler http.HandlerFunc, mws ...func(http.Handler) http.Handler) {
-	fullPath := r.prefix + strings.TrimSuffix(path, "/")
-	if fullPath == "" {
-		fullPath = "/"
-	}
-
+	fullPath := normalizePath(r.prefix + path)
 	pattern := method + " " + fullPath
 	routeHandler := r.wrap(handler, mws)
 	finalHandler := r.wrap(routeHandler, r.middlewares)
@@ -398,4 +395,17 @@ func middlewareNames(mws []func(http.Handler) http.Handler) []string {
 		names = append(names, name)
 	}
 	return names
+}
+
+func normalizePath(p string) string {
+	if p == "" {
+		return "/"
+	}
+
+	p = path.Clean("/" + p)
+	if p == "." {
+		return "/"
+	}
+
+	return p
 }
