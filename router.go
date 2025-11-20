@@ -34,27 +34,13 @@ func New() *Router {
 	}
 }
 
-// Use appends a middleware to the router's global middleware chain. Each middleware
+// Use appends the given middleware to the router's global middleware chain. Each middleware
 // added with Use will be applied to every request handled by this Router.
-//
-// Parameters:
-//
-//	mw: Middleware function to be applied globally
-//
-// Example:
-//
-//	router.Use(logMiddleware)
 func (r *Router) Use(mw func(http.Handler) http.Handler) {
 	r.middlewares = append(r.middlewares, mw)
 }
 
 // Get registers a new GET route for the specified path and handler, applying any optional middleware.
-//
-// Parameters:
-//
-//	p: URL path for the GET route
-//	handler: Handler function for GET requests to the specified path
-//	middlewares: Optional middlewares to apply to this specific route
 //
 // Example:
 //
@@ -65,12 +51,6 @@ func (r *Router) Get(p string, handler http.HandlerFunc, middlewares ...func(htt
 
 // Post registers a new POST route for the specified path and handler, applying any optional middleware.
 //
-// Parameters:
-//
-//	p: URL path for the POST route
-//	handler: Handler function for POST requests to the specified path
-//	middlewares: Optional middlewares to apply to this specific route
-//
 // Example:
 //
 //	router.Post("/submit", submitHandler, csrfMiddleware)
@@ -79,12 +59,6 @@ func (r *Router) Post(p string, handler http.HandlerFunc, middlewares ...func(ht
 }
 
 // Patch registers a new PATCH route for the specified path and handler, applying any optional middleware.
-//
-// Parameters:
-//
-//	p: URL path for the PATCH route
-//	handler: Handler function for PATCH requests to the specified path
-//	middlewares: Optional middlewares to apply to this specific route
 //
 // Example:
 //
@@ -95,12 +69,6 @@ func (r *Router) Patch(p string, handler http.HandlerFunc, middlewares ...func(h
 
 // Put registers a new PUT route for the specified path and handler, applying any optional middleware.
 //
-// Parameters:
-//
-//	p: URL path for the PUT route
-//	handler: Handler function for PUT requests to the specified path
-//	middlewares: Optional middlewares to apply to this specific route
-//
 // Example:
 //
 //	router.Put("/create", createHandler)
@@ -109,12 +77,6 @@ func (r *Router) Put(p string, handler http.HandlerFunc, middlewares ...func(htt
 }
 
 // Delete registers a new DELETE route for the specified path and handler, applying any optional middleware.
-//
-// Parameters:
-//
-//	p: URL path for the DELETE route
-//	handler: Handler function for DELETE requests to the specified path
-//	middlewares: Optional middlewares to apply to this specific route
 //
 // Example:
 //
@@ -126,12 +88,6 @@ func (r *Router) Delete(p string, handler http.HandlerFunc, middlewares ...func(
 // Connect registers a new route that responds to HTTP CONNECT requests for the specified path.
 // It applies the provided handler and any optional middlewares to the route.
 // The CONNECT method is typically used for establishing a network connection to a web server.
-//
-// Parameters:
-//   - p (string): The URL path for the route.
-//   - handler (http.HandlerFunc): The handler function to execute when the route is matched.
-//   - middlewares (...Middleware): Optional middlewares to apply to this route. These will be executed
-//     before the handler function.
 //
 // Example:
 //
@@ -146,11 +102,6 @@ func (r *Router) Connect(p string, handler http.HandlerFunc, middlewares ...func
 // It applies the provided handler and any optional middlewares to the route.
 // The OPTIONS method is used to describe the communication options for the target resource.
 //
-// Parameters:
-//   - p (string): The URL path for the route.
-//   - handler (http.HandlerFunc): The handler function to execute when the route is matched.
-//   - middlewares (...Middleware): Optional middlewares to apply to this route.
-//
 // Example:
 //
 //	r.Options("/example", func(w http.ResponseWriter, r *http.Request) {
@@ -163,11 +114,6 @@ func (r *Router) Options(p string, handler http.HandlerFunc, middlewares ...func
 // Trace registers a new route that responds to HTTP TRACE requests for the specified path.
 // It applies the provided handler and any optional middlewares to the route.
 // The TRACE method is used to perform a message loop-back test along the path to the target resource.
-//
-// Parameters:
-//   - p (string): The URL path for the route.
-//   - handler (http.HandlerFunc): The handler function to execute when the route is matched.
-//   - middlewares (...Middleware): Optional middlewares to apply to this route.
 //
 // Example:
 //
@@ -182,11 +128,6 @@ func (r *Router) Trace(p string, handler http.HandlerFunc, middlewares ...func(h
 // It applies the provided handler and any optional middlewares to the route.
 // The HEAD method is used to retrieve the headers of a resource, without fetching the resource itself.
 //
-// Parameters:
-//   - p (string): The URL path for the route.
-//   - handler (http.HandlerFunc): The handler function to execute when the route is matched.
-//   - middlewares (...Middleware): Optional middlewares to apply to this route.
-//
 // Example:
 //
 //	r.Head("/example", func(w http.ResponseWriter, r *http.Request) {
@@ -197,8 +138,6 @@ func (r *Router) Head(p string, handler http.HandlerFunc, middlewares ...func(ht
 }
 
 // ServeHTTP enables the Router to satisfy the http.Handler interface.
-// It delegates actual request handling to the underlying ServeMux after
-// applying the middleware chain to registered handlers.
 //
 // Example:
 //
