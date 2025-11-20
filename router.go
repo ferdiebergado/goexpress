@@ -237,7 +237,7 @@ func (r *Router) Group(prefix string, fn func(router *Router), middlewares ...fu
 	sub := &Router{
 		mux:         r.mux,
 		prefix:      r.prefix + prefix,
-		middlewares: append(r.middlewares, middlewares...),
+		middlewares: append(append([]func(http.Handler) http.Handler{}, r.middlewares...), middlewares...),
 	}
 
 	fn(sub)
