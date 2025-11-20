@@ -9,26 +9,13 @@ import (
 	"strings"
 )
 
-// Route describes a registered route, including its HTTP method, path pattern,
-// the name of the associated handler and the applied middlewares.
-type Route struct {
-	Method, Path string                            // HTTP method and Path
-	Handler      http.HandlerFunc                  // handler
-	Middlewares  []func(http.Handler) http.Handler // route-specific middlewares
-}
-
-// String returns a string representation of the registered route.
-func (r Route) String() string {
-	return fmt.Sprintf("%s %s %s %s", r.Method, r.Path, handlerName(r.Handler), middlewareNames(r.Middlewares))
-}
-
 // Router is a custom HTTP router built on top of http.ServeMux with support for global
 // and route-specific middleware. It allows easy route registration for common HTTP methods
 // (GET, POST, PATCH, PUT, DELETE) and provides a flexible middleware chain for request handling.
 type Router struct {
 	prefix      string                            // prefix for the paths of registered routes
 	mux         *http.ServeMux                    // underlying HTTP request multiplexer
-	routes      []Route                           // slice to store the registered routes
+	routes      []route                           // slice to store the registered routes
 	middlewares []func(http.Handler) http.Handler // slice to store global middleware functions
 }
 
@@ -72,7 +59,7 @@ func (r *Router) Use(mw func(next http.Handler) http.Handler) {
 //
 //	router.Get("/about", aboutHandler, authMiddleware)
 func (r *Router) Get(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.route(http.MethodGet, path, handler, middlewares...)
+	r.handle(http.MethodGet, path, handler, middlewares...)
 }
 
 // Post registers a new POST route for the specified path and handler, applying any optional middleware.
@@ -87,7 +74,7 @@ func (r *Router) Get(path string, handler http.HandlerFunc, middlewares ...func(
 //
 //	router.Post("/submit", submitHandler, csrfMiddleware)
 func (r *Router) Post(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.route(http.MethodPost, path, handler, middlewares...)
+	r.handle(http.MethodPost, path, handler, middlewares...)
 }
 
 // Patch registers a new PATCH route for the specified path and handler, applying any optional middleware.
@@ -102,7 +89,7 @@ func (r *Router) Post(path string, handler http.HandlerFunc, middlewares ...func
 //
 //	router.Patch("/update", updateHandler, authMiddleware)
 func (r *Router) Patch(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.route(http.MethodPatch, path, handler, middlewares...)
+	r.handle(http.MethodPatch, path, handler, middlewares...)
 }
 
 // Put registers a new PUT route for the specified path and handler, applying any optional middleware.
@@ -117,7 +104,7 @@ func (r *Router) Patch(path string, handler http.HandlerFunc, middlewares ...fun
 //
 //	router.Put("/create", createHandler)
 func (r *Router) Put(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.route(http.MethodPut, path, handler, middlewares...)
+	r.handle(http.MethodPut, path, handler, middlewares...)
 }
 
 // Delete registers a new DELETE route for the specified path and handler, applying any optional middleware.
@@ -132,7 +119,7 @@ func (r *Router) Put(path string, handler http.HandlerFunc, middlewares ...func(
 //
 //	router.Delete("/remove", removeHandler, authMiddleware)
 func (r *Router) Delete(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.route(http.MethodDelete, path, handler, middlewares...)
+	r.handle(http.MethodDelete, path, handler, middlewares...)
 }
 
 // Connect registers a new route that responds to HTTP CONNECT requests for the specified path.
@@ -151,7 +138,7 @@ func (r *Router) Delete(path string, handler http.HandlerFunc, middlewares ...fu
 //	    // Handler implementation
 //	})
 func (r *Router) Connect(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.route(http.MethodConnect, path, handler, middlewares...)
+	r.handle(http.MethodConnect, path, handler, middlewares...)
 }
 
 // Options registers a new route that responds to HTTP OPTIONS requests for the specified path.
@@ -169,7 +156,7 @@ func (r *Router) Connect(path string, handler http.HandlerFunc, middlewares ...f
 //	    // Handler implementation
 //	})
 func (r *Router) Options(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.route(http.MethodOptions, path, handler, middlewares...)
+	r.handle(http.MethodOptions, path, handler, middlewares...)
 }
 
 // Trace registers a new route that responds to HTTP TRACE requests for the specified path.
@@ -187,7 +174,7 @@ func (r *Router) Options(path string, handler http.HandlerFunc, middlewares ...f
 //	    // Handler implementation
 //	})
 func (r *Router) Trace(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.route(http.MethodTrace, path, handler, middlewares...)
+	r.handle(http.MethodTrace, path, handler, middlewares...)
 }
 
 // Head registers a new route that responds to HTTP HEAD requests for the specified path.
@@ -205,7 +192,7 @@ func (r *Router) Trace(path string, handler http.HandlerFunc, middlewares ...fun
 //	    // Handler implementation
 //	})
 func (r *Router) Head(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.route(http.MethodHead, path, handler, middlewares...)
+	r.handle(http.MethodHead, path, handler, middlewares...)
 }
 
 // ServeHTTP enables the Router to satisfy the http.Handler interface.
@@ -322,38 +309,38 @@ func (r *Router) String() string {
 	return s.String()
 }
 
-// route registers a route with a specified HTTP method and path, applying
+// handle registers a handle with a specified HTTP method and path, applying
 // any optional middlewares to the handler.
 //
 // Parameters:
 //
 //	method: HTTP method (e.g., "GET", "POST")
-//	path: URL path for the route
-//	handler: Handler function for the route
-//	middlewares: Optional middlewares to apply to this specific route
+//	path: URL path for the handle
+//	handler: Handler function for the handle
+//	middlewares: Optional middlewares to apply to this specific handle
 //
 // Example:
 //
-//	router.route("GET", "/info", infoHandler)
-func (r *Router) route(method, path string, handler http.HandlerFunc, mws ...func(http.Handler) http.Handler) {
+//	router.handle("GET", "/info", infoHandler)
+func (r *Router) handle(method, path string, handler http.HandlerFunc, mws ...func(http.Handler) http.Handler) {
 	fullPath := r.prefix + strings.TrimSuffix(path, "/")
 	if fullPath == "" {
 		fullPath = "/"
 	}
 
-	route := Route{
-		Method:      method,
-		Path:        fullPath,
-		Handler:     handler,
-		Middlewares: mws,
-	}
-
-	r.routes = append(r.routes, route)
-
-	pattern := route.Method + " " + route.Path
-	routeHandler := r.wrap(route.Handler, route.Middlewares)
+	pattern := method + " " + fullPath
+	routeHandler := r.wrap(handler, mws)
 	finalHandler := r.wrap(routeHandler, r.middlewares)
 	r.mux.Handle(pattern, finalHandler)
+
+	newRoute := route{
+		method:      method,
+		path:        fullPath,
+		handler:     handler,
+		middlewares: mws,
+	}
+
+	r.routes = append(r.routes, newRoute)
 }
 
 // wrap applies a series of middlewares to an http.Handler in reverse order,
@@ -364,6 +351,19 @@ func (r *Router) wrap(handler http.Handler, middlewares []func(http.Handler) htt
 		finalHandler = middlewares[i](finalHandler)
 	}
 	return finalHandler
+}
+
+// route describes a registered route, including its HTTP method, path pattern,
+// the name of the associated handler and the applied middlewares.
+type route struct {
+	method, path string                            // HTTP method and Path
+	handler      http.HandlerFunc                  // handler
+	middlewares  []func(http.Handler) http.Handler // route-specific middlewares
+}
+
+// String returns a string representation of the registered route.
+func (r route) String() string {
+	return fmt.Sprintf("%s %s %s %s", r.method, r.path, handlerName(r.handler), middlewareNames(r.middlewares))
 }
 
 // handlerName returns the name of the function that implements the given http.Handler.
