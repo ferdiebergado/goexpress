@@ -52,75 +52,75 @@ func (r *Router) Use(mw func(next http.Handler) http.Handler) {
 //
 // Parameters:
 //
-//	path: URL path for the GET route
+//	p: URL path for the GET route
 //	handler: Handler function for GET requests to the specified path
 //	middlewares: Optional middlewares to apply to this specific route
 //
 // Example:
 //
 //	router.Get("/about", aboutHandler, authMiddleware)
-func (r *Router) Get(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.handle(http.MethodGet, path, handler, middlewares...)
+func (r *Router) Get(p string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
+	r.handle(http.MethodGet, p, handler, middlewares...)
 }
 
 // Post registers a new POST route for the specified path and handler, applying any optional middleware.
 //
 // Parameters:
 //
-//	path: URL path for the POST route
+//	p: URL path for the POST route
 //	handler: Handler function for POST requests to the specified path
 //	middlewares: Optional middlewares to apply to this specific route
 //
 // Example:
 //
 //	router.Post("/submit", submitHandler, csrfMiddleware)
-func (r *Router) Post(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.handle(http.MethodPost, path, handler, middlewares...)
+func (r *Router) Post(p string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
+	r.handle(http.MethodPost, p, handler, middlewares...)
 }
 
 // Patch registers a new PATCH route for the specified path and handler, applying any optional middleware.
 //
 // Parameters:
 //
-//	path: URL path for the PATCH route
+//	p: URL path for the PATCH route
 //	handler: Handler function for PATCH requests to the specified path
 //	middlewares: Optional middlewares to apply to this specific route
 //
 // Example:
 //
 //	router.Patch("/update", updateHandler, authMiddleware)
-func (r *Router) Patch(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.handle(http.MethodPatch, path, handler, middlewares...)
+func (r *Router) Patch(p string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
+	r.handle(http.MethodPatch, p, handler, middlewares...)
 }
 
 // Put registers a new PUT route for the specified path and handler, applying any optional middleware.
 //
 // Parameters:
 //
-//	path: URL path for the PUT route
+//	p: URL path for the PUT route
 //	handler: Handler function for PUT requests to the specified path
 //	middlewares: Optional middlewares to apply to this specific route
 //
 // Example:
 //
 //	router.Put("/create", createHandler)
-func (r *Router) Put(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.handle(http.MethodPut, path, handler, middlewares...)
+func (r *Router) Put(p string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
+	r.handle(http.MethodPut, p, handler, middlewares...)
 }
 
 // Delete registers a new DELETE route for the specified path and handler, applying any optional middleware.
 //
 // Parameters:
 //
-//	path: URL path for the DELETE route
+//	p: URL path for the DELETE route
 //	handler: Handler function for DELETE requests to the specified path
 //	middlewares: Optional middlewares to apply to this specific route
 //
 // Example:
 //
 //	router.Delete("/remove", removeHandler, authMiddleware)
-func (r *Router) Delete(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.handle(http.MethodDelete, path, handler, middlewares...)
+func (r *Router) Delete(p string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
+	r.handle(http.MethodDelete, p, handler, middlewares...)
 }
 
 // Connect registers a new route that responds to HTTP CONNECT requests for the specified path.
@@ -128,7 +128,7 @@ func (r *Router) Delete(path string, handler http.HandlerFunc, middlewares ...fu
 // The CONNECT method is typically used for establishing a network connection to a web server.
 //
 // Parameters:
-//   - path (string): The URL path for the route.
+//   - p (string): The URL path for the route.
 //   - handler (http.HandlerFunc): The handler function to execute when the route is matched.
 //   - middlewares (...Middleware): Optional middlewares to apply to this route. These will be executed
 //     before the handler function.
@@ -138,8 +138,8 @@ func (r *Router) Delete(path string, handler http.HandlerFunc, middlewares ...fu
 //	r.Connect("/example", func(w http.ResponseWriter, r *http.Request) {
 //	    // Handler implementation
 //	})
-func (r *Router) Connect(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.handle(http.MethodConnect, path, handler, middlewares...)
+func (r *Router) Connect(p string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
+	r.handle(http.MethodConnect, p, handler, middlewares...)
 }
 
 // Options registers a new route that responds to HTTP OPTIONS requests for the specified path.
@@ -147,7 +147,7 @@ func (r *Router) Connect(path string, handler http.HandlerFunc, middlewares ...f
 // The OPTIONS method is used to describe the communication options for the target resource.
 //
 // Parameters:
-//   - path (string): The URL path for the route.
+//   - p (string): The URL path for the route.
 //   - handler (http.HandlerFunc): The handler function to execute when the route is matched.
 //   - middlewares (...Middleware): Optional middlewares to apply to this route.
 //
@@ -156,8 +156,8 @@ func (r *Router) Connect(path string, handler http.HandlerFunc, middlewares ...f
 //	r.Options("/example", func(w http.ResponseWriter, r *http.Request) {
 //	    // Handler implementation
 //	})
-func (r *Router) Options(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.handle(http.MethodOptions, path, handler, middlewares...)
+func (r *Router) Options(p string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
+	r.handle(http.MethodOptions, p, handler, middlewares...)
 }
 
 // Trace registers a new route that responds to HTTP TRACE requests for the specified path.
@@ -165,7 +165,7 @@ func (r *Router) Options(path string, handler http.HandlerFunc, middlewares ...f
 // The TRACE method is used to perform a message loop-back test along the path to the target resource.
 //
 // Parameters:
-//   - path (string): The URL path for the route.
+//   - p (string): The URL path for the route.
 //   - handler (http.HandlerFunc): The handler function to execute when the route is matched.
 //   - middlewares (...Middleware): Optional middlewares to apply to this route.
 //
@@ -174,8 +174,8 @@ func (r *Router) Options(path string, handler http.HandlerFunc, middlewares ...f
 //	r.Trace("/example", func(w http.ResponseWriter, r *http.Request) {
 //	    // Handler implementation
 //	})
-func (r *Router) Trace(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.handle(http.MethodTrace, path, handler, middlewares...)
+func (r *Router) Trace(p string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
+	r.handle(http.MethodTrace, p, handler, middlewares...)
 }
 
 // Head registers a new route that responds to HTTP HEAD requests for the specified path.
@@ -183,7 +183,7 @@ func (r *Router) Trace(path string, handler http.HandlerFunc, middlewares ...fun
 // The HEAD method is used to retrieve the headers of a resource, without fetching the resource itself.
 //
 // Parameters:
-//   - path (string): The URL path for the route.
+//   - p (string): The URL path for the route.
 //   - handler (http.HandlerFunc): The handler function to execute when the route is matched.
 //   - middlewares (...Middleware): Optional middlewares to apply to this route.
 //
@@ -192,8 +192,8 @@ func (r *Router) Trace(path string, handler http.HandlerFunc, middlewares ...fun
 //	r.Head("/example", func(w http.ResponseWriter, r *http.Request) {
 //	    // Handler implementation
 //	})
-func (r *Router) Head(path string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
-	r.handle(http.MethodHead, path, handler, middlewares...)
+func (r *Router) Head(p string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
+	r.handle(http.MethodHead, p, handler, middlewares...)
 }
 
 // ServeHTTP enables the Router to satisfy the http.Handler interface.
@@ -236,7 +236,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 func (r *Router) Group(prefix string, fn func(router *Router), middlewares ...func(http.Handler) http.Handler) {
 	sub := &Router{
 		mux:         r.mux,
-		prefix:      r.prefix + prefix,
+		prefix:      normalizePath(r.prefix + prefix),
 		middlewares: append(append([]func(http.Handler) http.Handler{}, r.middlewares...), middlewares...),
 	}
 
@@ -260,8 +260,8 @@ func (r *Router) Group(prefix string, fn func(router *Router), middlewares ...fu
 //
 // This function constructs a GET route pattern using the specified path
 // and registers it to the router, enabling clients to access static resources.
-func (r *Router) Static(prefix, path string) {
-	handler := http.StripPrefix(prefix, http.FileServer(http.Dir(path)))
+func (r *Router) Static(prefix, p string) {
+	handler := http.StripPrefix(prefix, http.FileServer(http.Dir(p)))
 	wrappedHandler := r.wrap(handler, r.middlewares)
 
 	pattern := prefix
@@ -323,8 +323,8 @@ func (r *Router) String() string {
 // Example:
 //
 //	router.handle("GET", "/info", infoHandler)
-func (r *Router) handle(method, path string, handler http.HandlerFunc, mws ...func(http.Handler) http.Handler) {
-	fullPath := normalizePath(r.prefix + path)
+func (r *Router) handle(method, p string, handler http.HandlerFunc, mws ...func(http.Handler) http.Handler) {
+	fullPath := normalizePath(r.prefix + p)
 	pattern := method + " " + fullPath
 	routeHandler := r.wrap(handler, mws)
 	finalHandler := r.wrap(routeHandler, r.middlewares)
