@@ -17,7 +17,7 @@ type Router struct {
 	prefix      string                            // prefix for the paths of registered routes
 	mux         *http.ServeMux                    // underlying HTTP request multiplexer
 	routes      []route                           // slice to store the registered routes
-	middlewares []func(http.Handler) http.Handler // slice to store global middleware functions
+	middlewares []func(http.Handler) http.Handler // slice to store global middlewares
 }
 
 // New creates and returns a custom HTTP router that satisfies the Router interface with an initialized
@@ -44,7 +44,7 @@ func New() *Router {
 // Example:
 //
 //	router.Use(logMiddleware)
-func (r *Router) Use(mw func(next http.Handler) http.Handler) {
+func (r *Router) Use(mw func(http.Handler) http.Handler) {
 	r.middlewares = append(r.middlewares, mw)
 }
 
@@ -59,7 +59,7 @@ func (r *Router) Use(mw func(next http.Handler) http.Handler) {
 // Example:
 //
 //	router.Get("/about", aboutHandler, authMiddleware)
-func (r *Router) Get(p string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
+func (r *Router) Get(p string, handler http.HandlerFunc, middlewares ...func(http.Handler) http.Handler) {
 	r.handle(http.MethodGet, p, handler, middlewares...)
 }
 
@@ -74,7 +74,7 @@ func (r *Router) Get(p string, handler http.HandlerFunc, middlewares ...func(nex
 // Example:
 //
 //	router.Post("/submit", submitHandler, csrfMiddleware)
-func (r *Router) Post(p string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
+func (r *Router) Post(p string, handler http.HandlerFunc, middlewares ...func(http.Handler) http.Handler) {
 	r.handle(http.MethodPost, p, handler, middlewares...)
 }
 
@@ -89,7 +89,7 @@ func (r *Router) Post(p string, handler http.HandlerFunc, middlewares ...func(ne
 // Example:
 //
 //	router.Patch("/update", updateHandler, authMiddleware)
-func (r *Router) Patch(p string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
+func (r *Router) Patch(p string, handler http.HandlerFunc, middlewares ...func(http.Handler) http.Handler) {
 	r.handle(http.MethodPatch, p, handler, middlewares...)
 }
 
@@ -104,7 +104,7 @@ func (r *Router) Patch(p string, handler http.HandlerFunc, middlewares ...func(n
 // Example:
 //
 //	router.Put("/create", createHandler)
-func (r *Router) Put(p string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
+func (r *Router) Put(p string, handler http.HandlerFunc, middlewares ...func(http.Handler) http.Handler) {
 	r.handle(http.MethodPut, p, handler, middlewares...)
 }
 
@@ -119,7 +119,7 @@ func (r *Router) Put(p string, handler http.HandlerFunc, middlewares ...func(nex
 // Example:
 //
 //	router.Delete("/remove", removeHandler, authMiddleware)
-func (r *Router) Delete(p string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
+func (r *Router) Delete(p string, handler http.HandlerFunc, middlewares ...func(http.Handler) http.Handler) {
 	r.handle(http.MethodDelete, p, handler, middlewares...)
 }
 
@@ -138,7 +138,7 @@ func (r *Router) Delete(p string, handler http.HandlerFunc, middlewares ...func(
 //	r.Connect("/example", func(w http.ResponseWriter, r *http.Request) {
 //	    // Handler implementation
 //	})
-func (r *Router) Connect(p string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
+func (r *Router) Connect(p string, handler http.HandlerFunc, middlewares ...func(http.Handler) http.Handler) {
 	r.handle(http.MethodConnect, p, handler, middlewares...)
 }
 
@@ -156,7 +156,7 @@ func (r *Router) Connect(p string, handler http.HandlerFunc, middlewares ...func
 //	r.Options("/example", func(w http.ResponseWriter, r *http.Request) {
 //	    // Handler implementation
 //	})
-func (r *Router) Options(p string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
+func (r *Router) Options(p string, handler http.HandlerFunc, middlewares ...func(http.Handler) http.Handler) {
 	r.handle(http.MethodOptions, p, handler, middlewares...)
 }
 
@@ -174,7 +174,7 @@ func (r *Router) Options(p string, handler http.HandlerFunc, middlewares ...func
 //	r.Trace("/example", func(w http.ResponseWriter, r *http.Request) {
 //	    // Handler implementation
 //	})
-func (r *Router) Trace(p string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
+func (r *Router) Trace(p string, handler http.HandlerFunc, middlewares ...func(http.Handler) http.Handler) {
 	r.handle(http.MethodTrace, p, handler, middlewares...)
 }
 
@@ -192,7 +192,7 @@ func (r *Router) Trace(p string, handler http.HandlerFunc, middlewares ...func(n
 //	r.Head("/example", func(w http.ResponseWriter, r *http.Request) {
 //	    // Handler implementation
 //	})
-func (r *Router) Head(p string, handler http.HandlerFunc, middlewares ...func(next http.Handler) http.Handler) {
+func (r *Router) Head(p string, handler http.HandlerFunc, middlewares ...func(http.Handler) http.Handler) {
 	r.handle(http.MethodHead, p, handler, middlewares...)
 }
 
@@ -233,7 +233,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 //
 //	/api/users
 //	/api/products
-func (r *Router) Group(prefix string, fn func(router *Router), middlewares ...func(http.Handler) http.Handler) {
+func (r *Router) Group(prefix string, fn func(*Router), middlewares ...func(http.Handler) http.Handler) {
 	sub := &Router{
 		mux:         r.mux,
 		prefix:      normalizePath(r.prefix + prefix),
