@@ -99,7 +99,7 @@ func TestLogRequest(t *testing.T) {
 			path:   "/headers",
 			headers: map[string]string{
 				"X-Test":       "true",
-				"Content-Type": goexpress.MimeJSON,
+				"Content-Type": "application/json",
 			},
 			userAgent:  "CustomAgent/2.0",
 			remoteAddr: "10.0.0.1",
