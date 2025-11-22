@@ -125,7 +125,7 @@ router.Group("/api", func(r *Router) {
 goexpress makes it easy to serve static files from a specified directory. Simply provide the name of the directory containing the static files to be served to the Static method of the router.
 
 ```go
-router.Static("assets")
+router.Static("/assets", "./assets")
 ```
 
 This will serve files from the "assets" directory at "/assets/". Now, any request the starts with /assets/ will serve files from this directory, e.g. /assets/styles.css.
@@ -201,11 +201,11 @@ func main() {
 	router := goexpress.New()
 
 	// Register global middlewares.
-	router.Use(goexpress.PanicRecovery)
-	router.Use(goexpress.RequestLogger)
+	router.Use(goexpress.RecoverPanic)
+	router.Use(goexpress.LogRequest)
 
 	// Serve static files.
-	router.Static("assets")
+	router.Static("/assets", "./assets")
 
 	// Register routes.
 	router.Get("/api/todos", ListTodos)
