@@ -571,6 +571,38 @@ func TestGroup(t *testing.T) {
 			wantBody:   "hello",
 			wantHeader: "inner",
 		},
+		{
+			name:   "base route",
+			method: http.MethodPost,
+			path:   "/users",
+			setup: func(router *goexpress.Router) {
+				router.Group("/users", func(r *goexpress.Router) {
+					r.Post("/", func(w http.ResponseWriter, _ *http.Request) {
+						w.WriteHeader(http.StatusCreated)
+						w.Write([]byte("user created"))
+					})
+				})
+			},
+			wantStatus: http.StatusCreated,
+			wantBody:   "user created",
+			wantHeader: "",
+		},
+		{
+			name:   "route param",
+			method: http.MethodGet,
+			path:   "/users/1",
+			setup: func(router *goexpress.Router) {
+				router.Group("/users", func(r *goexpress.Router) {
+					r.Get("/{id}", func(w http.ResponseWriter, req *http.Request) {
+						w.WriteHeader(http.StatusOK)
+						w.Write([]byte("user id: " + req.PathValue("id")))
+					})
+				})
+			},
+			wantStatus: http.StatusOK,
+			wantBody:   "user id: 1",
+			wantHeader: "",
+		},
 	}
 
 	for _, tt := range tests {
