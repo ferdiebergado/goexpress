@@ -20,8 +20,7 @@ type Router struct {
 	middlewares []func(http.Handler) http.Handler // slice to store global middlewares
 }
 
-// New creates and returns a custom HTTP router that satisfies the Router interface with an initialized
-// http.ServeMux and an empty slice for middlewares.
+// New creates and returns a custom HTTP router.
 //
 // Example:
 //
