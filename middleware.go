@@ -8,8 +8,6 @@ import (
 	"strings"
 )
 
-const MimeJSON = "application/json"
-
 // LogRequest logs each incoming HTTP request including the method, URL, protocol,
 // status code, status text, and duration of the request. It wraps the handler to log this information.
 func LogRequest(next http.Handler) http.Handler {
