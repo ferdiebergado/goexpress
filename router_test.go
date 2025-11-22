@@ -22,7 +22,7 @@ func TestNewRouter(t *testing.T) {
 	}
 }
 
-func TestHTTPMethods(t *testing.T) {
+func TestHTTPVerbHelpers(t *testing.T) {
 	t.Parallel()
 
 	const wantStatus = http.StatusTeapot
@@ -216,7 +216,6 @@ func TestStatic(t *testing.T) {
 			assertBody(t, rec.Body.String(), wantBody)
 		})
 	}
-
 }
 
 // TestNotFound verifies that the custom "Not Found" handler is called for undefined routes.
