@@ -41,7 +41,7 @@ router := goexpress.New()
 Global middlewares are registered by calling the Use() method on the router.
 
 ```go
-router.Use(goexpress.RequestLogger)
+router.Use(goexpress.LogRequest)
 ```
 
 goexpress has some commonly-used middlewares available out of the box, just import it from the middleware package.
@@ -52,8 +52,8 @@ import "github.com/ferdiebergado/goexpress"
 func main() {
 	router := goexpress.New()
 
-	router.Use(goexpress.PanicRecovery)
-	router.Use(goexpress.RequestLogger)
+	router.Use(goexpress.RecoverPanic)
+	router.Use(goexpress.LogRequest)
 }
 ```
 
@@ -122,10 +122,10 @@ router.Group("/api", func(r *Router) {
 
 ## Serving Static Files
 
-goexpress makes it easy to serve static files from a specified directory. Simply provide the name of the directory containing the static files to be served to the ServeStatic method of the router.
+goexpress makes it easy to serve static files from a specified directory. Simply provide the name of the directory containing the static files to be served to the Static method of the router.
 
 ```go
-router.ServeStatic("assets")
+router.Static("assets")
 ```
 
 This will serve files from the "assets" directory at "/assets/". Now, any request the starts with /assets/ will serve files from this directory, e.g. /assets/styles.css.
@@ -205,7 +205,7 @@ func main() {
 	router.Use(goexpress.RequestLogger)
 
 	// Serve static files.
-	router.ServeStatic("assets")
+	router.Static("assets")
 
 	// Register routes.
 	router.Get("/api/todos", ListTodos)
