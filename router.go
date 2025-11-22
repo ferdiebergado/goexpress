@@ -10,6 +10,21 @@ import (
 	"strings"
 )
 
+// Middleware defines the signature for a standard net/http middleware function.
+//
+// A Middleware takes an http.Handler (the 'next' handler in the chain) and returns
+// a new http.Handler that wraps and executes the 'next' handler. This signature
+// ensures compatibility with the standard library and all third-party Go web middleware.
+//
+// Example usage:
+//
+//	func MyMiddleware(next http.Handler) http.Handler {
+//	    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//	        // Logic before the handler runs
+//	        next.ServeHTTP(w, r)
+//	        // Logic after the handler runs
+//	    })
+//	}
 type Middleware func(http.Handler) http.Handler
 
 // Router is a custom HTTP router built on top of http.ServeMux with support for global
@@ -37,6 +52,10 @@ func New() *Router {
 
 // Use appends the given middleware to the router's global middleware chain. Each middleware
 // added with Use will be applied to every request handled by this Router.
+//
+// Example:
+//
+//	router.Use(goexpress.LogRequest)
 func (r *Router) Use(mw Middleware) {
 	r.middlewares = append(r.middlewares, mw)
 }
