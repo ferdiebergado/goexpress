@@ -9,7 +9,7 @@ import (
 )
 
 // LogRequest logs each incoming HTTP request including the method, URL, protocol,
-// status code, status text, and duration of the request. It wraps the handler to log this information.
+// status code, status text, and duration of the request.
 func LogRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		slog.Info("New Request",
