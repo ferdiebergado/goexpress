@@ -108,7 +108,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 func (r *Router) Group(prefix string, fn func(*Router), middlewares ...Middleware) {
 	sub := &Router{
 		mux:         r.mux,
-		prefix:      normalizePath(r.prefix + prefix),
+		prefix:      r.prefix + prefix,
 		middlewares: append(append([]Middleware{}, r.middlewares...), middlewares...),
 	}
 
