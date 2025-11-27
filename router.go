@@ -51,47 +51,47 @@ func (r *Router) Use(mw Middleware) {
 }
 
 // Get registers a new GET route for the specified path and handler, applying any optional middleware.
-func (r *Router) Get(p string, handler http.HandlerFunc, middlewares ...Middleware) {
+func (r *Router) Get(p string, handler http.Handler, middlewares ...Middleware) {
 	r.handle(http.MethodGet, p, handler, middlewares...)
 }
 
 // Post registers a new POST route for the specified path and handler, applying any optional middleware.
-func (r *Router) Post(p string, handler http.HandlerFunc, middlewares ...Middleware) {
+func (r *Router) Post(p string, handler http.Handler, middlewares ...Middleware) {
 	r.handle(http.MethodPost, p, handler, middlewares...)
 }
 
 // Patch registers a new PATCH route for the specified path and handler, applying any optional middleware.
-func (r *Router) Patch(p string, handler http.HandlerFunc, middlewares ...Middleware) {
+func (r *Router) Patch(p string, handler http.Handler, middlewares ...Middleware) {
 	r.handle(http.MethodPatch, p, handler, middlewares...)
 }
 
 // Put registers a new PUT route for the specified path and handler, applying any optional middleware.
-func (r *Router) Put(p string, handler http.HandlerFunc, middlewares ...Middleware) {
+func (r *Router) Put(p string, handler http.Handler, middlewares ...Middleware) {
 	r.handle(http.MethodPut, p, handler, middlewares...)
 }
 
 // Delete registers a new DELETE route for the specified path and handler, applying any optional middleware.
-func (r *Router) Delete(p string, handler http.HandlerFunc, middlewares ...Middleware) {
+func (r *Router) Delete(p string, handler http.Handler, middlewares ...Middleware) {
 	r.handle(http.MethodDelete, p, handler, middlewares...)
 }
 
 // Connect registers a new route that responds to HTTP CONNECT requests for the specified path.
-func (r *Router) Connect(p string, handler http.HandlerFunc, middlewares ...Middleware) {
+func (r *Router) Connect(p string, handler http.Handler, middlewares ...Middleware) {
 	r.handle(http.MethodConnect, p, handler, middlewares...)
 }
 
 // Options registers a new route that responds to HTTP OPTIONS requests for the specified path.
-func (r *Router) Options(p string, handler http.HandlerFunc, middlewares ...Middleware) {
+func (r *Router) Options(p string, handler http.Handler, middlewares ...Middleware) {
 	r.handle(http.MethodOptions, p, handler, middlewares...)
 }
 
 // Trace registers a new route that responds to HTTP TRACE requests for the specified path.
-func (r *Router) Trace(p string, handler http.HandlerFunc, middlewares ...Middleware) {
+func (r *Router) Trace(p string, handler http.Handler, middlewares ...Middleware) {
 	r.handle(http.MethodTrace, p, handler, middlewares...)
 }
 
 // Head registers a new route that responds to HTTP HEAD requests for the specified path.
-func (r *Router) Head(p string, handler http.HandlerFunc, middlewares ...Middleware) {
+func (r *Router) Head(p string, handler http.Handler, middlewares ...Middleware) {
 	r.handle(http.MethodHead, p, handler, middlewares...)
 }
 
@@ -134,7 +134,7 @@ func (r *Router) Static(prefix, dir string) {
 // NotFound sets a custom handler for requests that don't match any registered route.
 // When a request is made to an undefined route, this handler will be invoked,
 // allowing a custom "Not Found" page or response to be returned.
-func (r *Router) NotFound(handler http.HandlerFunc) {
+func (r *Router) NotFound(handler http.Handler) {
 	finalHandler := r.wrap(handler, r.middlewares)
 	r.mux.Handle("/", finalHandler)
 }
@@ -158,7 +158,7 @@ func (r *Router) String() string {
 
 // handle registers a handle with a specified HTTP method and path, applying
 // any optional middlewares to the handler.
-func (r *Router) handle(method, p string, handler http.HandlerFunc, mws ...Middleware) {
+func (r *Router) handle(method, p string, handler http.Handler, mws ...Middleware) {
 	fullPath := normalizePath(r.prefix + p)
 	pattern := method + " " + fullPath
 	routeHandler := r.wrap(handler, mws)
@@ -188,9 +188,9 @@ func (r *Router) wrap(handler http.Handler, middlewares []Middleware) http.Handl
 // route describes a registered route, including its HTTP method, path pattern,
 // the name of the associated handler and the applied middlewares.
 type route struct {
-	method, path string           // HTTP method and Path
-	handler      http.HandlerFunc // handler
-	middlewares  []Middleware     // route-specific middlewares
+	method, path string       // HTTP method and Path
+	handler      http.Handler // handler
+	middlewares  []Middleware // route-specific middlewares
 }
 
 // String returns a string representation of the registered route.

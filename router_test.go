@@ -45,7 +45,7 @@ func TestHTTPVerbHelpers(t *testing.T) {
 			name:   "Get method",
 			method: http.MethodGet,
 			setup: func(router *goexpress.Router) {
-				router.Get("/hello", helloHandler)
+				router.Get("/hello", http.HandlerFunc(helloHandler))
 			},
 			wantBody: "GET",
 		},
@@ -53,7 +53,7 @@ func TestHTTPVerbHelpers(t *testing.T) {
 			name:   "Post method",
 			method: http.MethodPost,
 			setup: func(router *goexpress.Router) {
-				router.Post("/hello", helloHandler)
+				router.Post("/hello", http.HandlerFunc(helloHandler))
 			},
 			wantBody: "POST",
 		},
@@ -61,7 +61,7 @@ func TestHTTPVerbHelpers(t *testing.T) {
 			name:   "Put method",
 			method: http.MethodPut,
 			setup: func(router *goexpress.Router) {
-				router.Put("/hello", helloHandler)
+				router.Put("/hello", http.HandlerFunc(helloHandler))
 			},
 			wantBody: "PUT",
 		},
@@ -69,7 +69,7 @@ func TestHTTPVerbHelpers(t *testing.T) {
 			name:   "Patch method",
 			method: http.MethodPatch,
 			setup: func(router *goexpress.Router) {
-				router.Patch("/hello", helloHandler)
+				router.Patch("/hello", http.HandlerFunc(helloHandler))
 			},
 			wantBody: "PATCH",
 		},
@@ -77,7 +77,7 @@ func TestHTTPVerbHelpers(t *testing.T) {
 			name:   "Delete method",
 			method: http.MethodDelete,
 			setup: func(router *goexpress.Router) {
-				router.Delete("/hello", helloHandler)
+				router.Delete("/hello", http.HandlerFunc(helloHandler))
 			},
 			wantBody: "DELETE",
 		},
@@ -85,7 +85,7 @@ func TestHTTPVerbHelpers(t *testing.T) {
 			name:   "Options method",
 			method: http.MethodOptions,
 			setup: func(router *goexpress.Router) {
-				router.Options("/hello", helloHandler)
+				router.Options("/hello", http.HandlerFunc(helloHandler))
 			},
 			wantBody: "OPTIONS",
 		},
@@ -93,7 +93,7 @@ func TestHTTPVerbHelpers(t *testing.T) {
 			name:   "Head method",
 			method: http.MethodHead,
 			setup: func(router *goexpress.Router) {
-				router.Head("/hello", helloHandler)
+				router.Head("/hello", http.HandlerFunc(helloHandler))
 			},
 			wantBody: "HEAD",
 		},
@@ -101,7 +101,7 @@ func TestHTTPVerbHelpers(t *testing.T) {
 			name:   "Connect method",
 			method: http.MethodConnect,
 			setup: func(router *goexpress.Router) {
-				router.Connect("/hello", helloHandler)
+				router.Connect("/hello", http.HandlerFunc(helloHandler))
 			},
 			wantBody: "CONNECT",
 		},
@@ -109,7 +109,7 @@ func TestHTTPVerbHelpers(t *testing.T) {
 			name:   "Trace method",
 			method: http.MethodTrace,
 			setup: func(router *goexpress.Router) {
-				router.Trace("/hello", helloHandler)
+				router.Trace("/hello", http.HandlerFunc(helloHandler))
 			},
 			wantBody: "TRACE",
 		},
@@ -242,7 +242,7 @@ func TestNotFound(t *testing.T) {
 
 	r := goexpress.New()
 	r.Use(mw)
-	r.NotFound(notFoundHandler)
+	r.NotFound(http.HandlerFunc(notFoundHandler))
 
 	req := httptest.NewRequest(http.MethodGet, "/unknown", http.NoBody)
 	rec := httptest.NewRecorder()
@@ -275,10 +275,10 @@ func TestRouter(t *testing.T) {
 			method: "GET",
 			path:   "/hello",
 			setup: func(router *goexpress.Router) {
-				router.Get("/hello", func(w http.ResponseWriter, _ *http.Request) {
+				router.Get("/hello", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusOK)
 					w.Write([]byte("Hello, world!"))
-				})
+				}))
 			},
 			wantStatus: http.StatusOK,
 			wantBody:   "Hello, world!",
@@ -306,7 +306,7 @@ func TestRouter(t *testing.T) {
 
 				router.Use(globalMw)
 
-				router.Get("/", func(w http.ResponseWriter, r *http.Request) {
+				router.Get("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					val, ok := r.Context().Value(mwKey).([]string)
 					if !ok {
 						t.Fatalf("unable to get context value: %v", val)
@@ -314,7 +314,7 @@ func TestRouter(t *testing.T) {
 
 					w.WriteHeader(http.StatusOK)
 					w.Write([]byte(strings.Join(val, ",")))
-				})
+				}))
 			},
 			wantStatus: http.StatusOK,
 			wantBody:   "X-Middleware1-Called",
@@ -333,7 +333,7 @@ func TestRouter(t *testing.T) {
 					})
 				}
 
-				router.Get("/route1", func(w http.ResponseWriter, r *http.Request) {
+				router.Get("/route1", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					val, ok := r.Context().Value(mw2key).([]string)
 					if !ok {
 						t.Fatalf("unable to get context value: %v", val)
@@ -341,7 +341,7 @@ func TestRouter(t *testing.T) {
 
 					w.WriteHeader(http.StatusOK)
 					w.Write([]byte(strings.Join(val, ",")))
-				}, mw)
+				}), mw)
 			},
 			wantStatus: http.StatusOK,
 			wantBody:   "X-Middleware1-Called",
@@ -351,10 +351,10 @@ func TestRouter(t *testing.T) {
 			method: "POST",
 			path:   "/hello",
 			setup: func(router *goexpress.Router) {
-				router.Get("/hello", func(w http.ResponseWriter, _ *http.Request) {
+				router.Get("/hello", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusOK)
 					w.Write([]byte("Hello, world!"))
-				})
+				}))
 			},
 			wantStatus: http.StatusMethodNotAllowed,
 			wantBody:   "Method Not Allowed",
@@ -409,10 +409,10 @@ func TestGroup(t *testing.T) {
 				}
 
 				router.Group("/api", func(r *goexpress.Router) {
-					r.Get("/hello", func(w http.ResponseWriter, _ *http.Request) {
+					r.Get("/hello", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 						w.WriteHeader(http.StatusOK)
 						w.Write([]byte("hello"))
-					})
+					}))
 				}, grpMw)
 			},
 			wantStatus: http.StatusOK,
@@ -432,10 +432,10 @@ func TestGroup(t *testing.T) {
 				}
 
 				router.Group("/api", func(r *goexpress.Router) {
-					r.Get("/hello", func(w http.ResponseWriter, _ *http.Request) {
+					r.Get("/hello", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 						w.WriteHeader(http.StatusOK)
 						w.Write([]byte("hello"))
-					}, mw)
+					}), mw)
 				})
 			},
 			wantStatus: http.StatusOK,
@@ -462,9 +462,9 @@ func TestGroup(t *testing.T) {
 				}
 
 				router.Group("/api", func(r *goexpress.Router) {
-					r.Get("/hello", func(w http.ResponseWriter, _ *http.Request) {
+					r.Get("/hello", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 						w.Write([]byte("hello"))
-					}, mw)
+					}), mw)
 				}, grpMw)
 			},
 			wantStatus: http.StatusUnauthorized,
@@ -478,10 +478,10 @@ func TestGroup(t *testing.T) {
 			setup: func(router *goexpress.Router) {
 				router.Group("/api", func(r *goexpress.Router) {
 					r.Group("/users", func(r2 *goexpress.Router) {
-						r2.Get("/hello", func(w http.ResponseWriter, _ *http.Request) {
+						r2.Get("/hello", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 							w.WriteHeader(http.StatusOK)
 							w.Write([]byte("hello"))
-						})
+						}))
 					})
 				})
 			},
@@ -503,10 +503,10 @@ func TestGroup(t *testing.T) {
 
 				router.Group("/api", func(r *goexpress.Router) {
 					r.Group("/users", func(r2 *goexpress.Router) {
-						r2.Get("/hello", func(w http.ResponseWriter, _ *http.Request) {
+						r2.Get("/hello", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 							w.WriteHeader(http.StatusOK)
 							w.Write([]byte("hello"))
-						})
+						}))
 					})
 				}, grpMw)
 			},
@@ -528,10 +528,10 @@ func TestGroup(t *testing.T) {
 
 				router.Group("/api", func(r *goexpress.Router) {
 					r.Group("/users", func(r2 *goexpress.Router) {
-						r2.Get("/hello", func(w http.ResponseWriter, _ *http.Request) {
+						r2.Get("/hello", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 							w.WriteHeader(http.StatusOK)
 							w.Write([]byte("hello"))
-						})
+						}))
 					}, grpMw)
 				})
 			},
@@ -560,10 +560,10 @@ func TestGroup(t *testing.T) {
 
 				router.Group("/api", func(r *goexpress.Router) {
 					r.Group("/users", func(r2 *goexpress.Router) {
-						r2.Get("/hello", func(w http.ResponseWriter, _ *http.Request) {
+						r2.Get("/hello", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 							w.WriteHeader(http.StatusOK)
 							w.Write([]byte("hello"))
-						}, mw)
+						}), mw)
 					}, grpMw)
 				})
 			},
@@ -577,10 +577,10 @@ func TestGroup(t *testing.T) {
 			path:   "/users",
 			setup: func(router *goexpress.Router) {
 				router.Group("/users", func(r *goexpress.Router) {
-					r.Post("/", func(w http.ResponseWriter, _ *http.Request) {
+					r.Post("/", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 						w.WriteHeader(http.StatusCreated)
 						w.Write([]byte("user created"))
-					})
+					}))
 				})
 			},
 			wantStatus: http.StatusCreated,
@@ -593,10 +593,10 @@ func TestGroup(t *testing.T) {
 			path:   "/users/1",
 			setup: func(router *goexpress.Router) {
 				router.Group("/users", func(r *goexpress.Router) {
-					r.Get("/{id}", func(w http.ResponseWriter, req *http.Request) {
+					r.Get("/{id}", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 						w.WriteHeader(http.StatusOK)
 						w.Write([]byte("user id: " + req.PathValue("id")))
-					})
+					}))
 				})
 			},
 			wantStatus: http.StatusOK,

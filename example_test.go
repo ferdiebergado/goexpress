@@ -15,9 +15,9 @@ func Example() {
 
 	router.Static("/static", "./static")
 
-	router.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
+	router.Get("/hello", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("hello"))
-	})
+	}))
 
 	authMiddleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -40,23 +40,23 @@ func Example() {
 	}
 
 	router.Group("/users", func(usersRouter *goexpress.Router) {
-		usersRouter.Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
+		usersRouter.Get("/{id}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("profile of user: " + r.PathValue("id")))
-		})
-		usersRouter.Post("/", func(w http.ResponseWriter, r *http.Request) {
+		}))
+		usersRouter.Post("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusCreated)
 			w.Write([]byte("user created"))
-		}, checkContentTypeMiddleware)
+		}), checkContentTypeMiddleware)
 		usersRouter.Group("/posts", func(postsRouter *goexpress.Router) {
-			postsRouter.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			postsRouter.Get("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte("list of posts"))
-			})
+			}))
 		})
 	}, authMiddleware)
 
-	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
+	router.NotFound(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page your are looking for was not found", http.StatusNotFound)
-	})
+	}))
 
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
@@ -71,18 +71,18 @@ func ExampleRouter_Use() {
 func ExampleRouter_Get() {
 	router := goexpress.New()
 
-	router.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
+	router.Get("/hello", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("hello"))
-	})
+	}))
 }
 
 func ExampleRouter_Post() {
 	router := goexpress.New()
 
-	router.Post("/register", func(w http.ResponseWriter, r *http.Request) {
+	router.Post("/register", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 		w.Write([]byte("Registered!"))
-	})
+	}))
 }
 
 func ExampleRouter_Group() {
@@ -109,17 +109,17 @@ func ExampleRouter_Group() {
 	}
 
 	router.Group("/users", func(usersRouter *goexpress.Router) {
-		usersRouter.Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
+		usersRouter.Get("/{id}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("profile of user: " + r.PathValue("id")))
-		})
-		usersRouter.Post("/", func(w http.ResponseWriter, r *http.Request) {
+		}))
+		usersRouter.Post("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusCreated)
 			w.Write([]byte("user created"))
-		}, checkContentTypeMiddleware)
+		}), checkContentTypeMiddleware)
 		usersRouter.Group("/posts", func(postsRouter *goexpress.Router) {
-			postsRouter.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			postsRouter.Get("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte("list of posts"))
-			})
+			}))
 		})
 	}, authMiddleware)
 }
@@ -133,11 +133,11 @@ func ExampleRouter_Static() {
 func ExampleRouter_NotFound() {
 	router := goexpress.New()
 
-	router.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
+	router.Get("/hello", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("hello"))
-	})
+	}))
 
-	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
+	router.NotFound(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Custom 404 - Page Not Found", http.StatusNotFound)
-	})
+	}))
 }
