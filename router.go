@@ -118,11 +118,12 @@ func (r *Router) Group(prefix string, fn func(*Router), middlewares ...Middlewar
 }
 
 // Static serves static files from the specified local directory path at the given url prefix.
-func (r *Router) Static(prefix, p string) {
-	handler := http.StripPrefix(prefix, http.FileServer(http.Dir(p)))
+func (r *Router) Static(prefix, dir string) {
+	fullPrefix := normalizePath(prefix)
+	handler := http.StripPrefix(fullPrefix, http.FileServer(http.Dir(dir)))
 	wrappedHandler := r.wrap(handler, r.middlewares)
 
-	pattern := prefix
+	pattern := fullPrefix
 	if !strings.HasSuffix(pattern, "/") {
 		pattern += "/"
 	}
