@@ -153,7 +153,7 @@ func TestStatic(t *testing.T) {
 		wantBody   string
 	}{
 		{
-			name: "absolute path",
+			name: "directory with absolute path",
 			setup: func(r *goexpress.Router) string {
 				tmpDir := t.TempDir()
 				path := tmpDir + "/test.html"
@@ -171,7 +171,7 @@ func TestStatic(t *testing.T) {
 			wantBody:   wantBody,
 		},
 		{
-			name: "relative path",
+			name: "directory with relative path",
 			setup: func(r *goexpress.Router) string {
 				r.Static("/static", "static")
 
@@ -185,6 +185,28 @@ func TestStatic(t *testing.T) {
 			name: "relative path with current directory prefix",
 			setup: func(r *goexpress.Router) string {
 				r.Static("/static", "./static")
+
+				return staticFile
+			},
+			wantStatus: http.StatusOK,
+			wantHeader: wantHeader,
+			wantBody:   wantBody,
+		},
+		{
+			name: "prefix with parent directory",
+			setup: func(r *goexpress.Router) string {
+				r.Static("../static", "./static")
+
+				return staticFile
+			},
+			wantStatus: http.StatusOK,
+			wantHeader: wantHeader,
+			wantBody:   wantBody,
+		},
+		{
+			name: "prefix with double slash",
+			setup: func(r *goexpress.Router) string {
+				r.Static("//static", "./static")
 
 				return staticFile
 			},
