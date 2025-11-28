@@ -159,7 +159,7 @@ func (r *Router) String() string {
 // handle registers a handle with a specified HTTP method and path, applying
 // any optional middlewares to the handler.
 func (r *Router) handle(method, p string, handler http.Handler, mws ...Middleware) {
-	fullPath := normalizePath(r.prefix + p)
+	fullPath := normalizePath(r.prefix + "/" + p)
 	pattern := method + " " + fullPath
 	routeHandler := r.wrap(handler, mws)
 	finalHandler := r.wrap(routeHandler, r.middlewares)
